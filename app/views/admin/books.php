@@ -53,3 +53,4 @@
         </table>
     </div>
 <?php endif; ?>
+<?= render_template('admin/_pagination',compact('page','pages','total')+['path'=>'/admin/livros','filters'=>['q'=>$q]]) ?>

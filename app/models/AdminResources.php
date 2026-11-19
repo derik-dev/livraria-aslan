@@ -7,6 +7,25 @@ final class AdminResources
     public static function definitions(): array
     {
         return [
+            'frete' => ['table' => 'shipping_rates', 'title' => 'Frete', 'search' => ['name', 'state', 'cep_start', 'cep_end'],
+                'columns' => ['name' => 'Faixa', 'state' => 'Estado', 'cep_start' => 'CEP inicial', 'cep_end' => 'CEP final', 'price' => 'Preço', 'active' => 'Ativa'],
+                'fields' => [
+                    'name' => ['Nome da faixa', 'text', true, 80], 'state' => ['Estado (vazio = todos)', 'select', false, ['' => 'Todos os estados'] + array_combine(BR_STATES, BR_STATES)],
+                    'cep_start' => ['CEP inicial (opcional)', 'cep', false, 9], 'cep_end' => ['CEP final (opcional)', 'cep', false, 9],
+                    'price' => ['Preço em reais', 'money', true], 'free_above' => ['Frete grátis a partir de (R$, vazio = sem regra)', 'money', false],
+                    'days_min' => ['Prazo mínimo em dias úteis', 'integer', true, 255], 'days_max' => ['Prazo máximo em dias úteis', 'integer', true, 255],
+                    'active' => ['Ativa', 'checkbox'],
+                ], 'delete' => true],
+            'banners' => ['table' => 'banners', 'title' => 'Banners', 'search' => ['title', 'subtitle'],
+                'columns' => ['title' => 'Título', 'position' => 'Posição', 'sort_order' => 'Ordem', 'starts_at' => 'Início', 'ends_at' => 'Fim', 'active' => 'Ativo'],
+                'fields' => [
+                    'title' => ['Título', 'text', true, 150], 'subtitle' => ['Subtítulo', 'text', false, 255],
+                    'link_url' => ['Link (ex.: /catalogo)', 'link', false, 255], 'button_text' => ['Texto do botão', 'text', false, 40],
+                    'position' => ['Posição na página inicial', 'select', true, ['home_topo' => 'Topo', 'home_meio' => 'Meio', 'home_rodape' => 'Rodapé']],
+                    'sort_order' => ['Ordem de exibição (menor primeiro)', 'integer', true, 100000],
+                    'starts_at' => ['Início da exibição', 'datetime', false], 'ends_at' => ['Fim da exibição', 'datetime', false],
+                    'active' => ['Ativo', 'checkbox'],
+                ], 'delete' => true, 'image' => true],
             'categorias' => ['table' => 'categories', 'title' => 'Categorias', 'search' => ['name', 'slug'],
                 'columns' => ['name' => 'Nome', 'slug' => 'Endereço', 'active' => 'Ativa'],
                 'fields' => [
@@ -53,6 +72,9 @@ final class AdminResources
                 } else {
                     $value = $type === 'money' ? cents_to_decimal($number) : $number;
                 }
+            } elseif ($type === 'cep') {
+                $value = only_digits($raw);
+                if (strlen($value) !== 8) $errors[$key] = 'Informe um CEP com 8 números.';
             } elseif ($type === 'datetime') {
                 $date = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $raw);
                 if (!$date || $date->format('Y-m-d\TH:i') !== $raw) $errors[$key] = 'Informe uma data válida.';
@@ -71,6 +93,12 @@ final class AdminResources
             $values[$key] = $value;
         }
         if (isset($values['starts_at'], $values['expires_at']) && $values['expires_at'] <= $values['starts_at']) $errors['expires_at'] = 'O fim precisa ser posterior ao início.';
+        if (isset($values['starts_at'], $values['ends_at']) && $values['ends_at'] <= $values['starts_at']) $errors['ends_at'] = 'O fim precisa ser posterior ao início.';
+        if (($definition['table'] ?? '') === 'shipping_rates') {
+            if (($values['cep_start'] === null) !== ($values['cep_end'] === null)) $errors['cep_end'] = 'Preencha os dois limites de CEP ou deixe ambos vazios.';
+            if ($values['cep_start'] !== null && strcmp($values['cep_start'], $values['cep_end'] ?? '') > 0) $errors['cep_end'] = 'O CEP final precisa ser maior ou igual ao inicial.';
+            if (is_numeric($values['days_min']) && is_numeric($values['days_max']) && (int) $values['days_min'] > (int) $values['days_max']) $errors['days_max'] = 'O prazo máximo precisa ser maior ou igual ao mínimo.';
+        }
         if (($definition['table'] ?? '') === 'coupons') {
             if (($values['type'] ?? '') === 'percent' && (float) ($values['value'] ?? 0) > 100) $errors['value'] = 'A porcentagem não pode passar de 100%.';
             if ((float) ($values['value'] ?? 0) <= 0) $errors['value'] = 'O desconto deve ser maior que zero.';

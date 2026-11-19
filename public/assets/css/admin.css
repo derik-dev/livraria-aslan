@@ -1,0 +1,11 @@
+/* O painel usa a mesma tipografia, botões e cores da livraria. */
+.admin-menu { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 20px; padding-bottom: 20px; border-bottom: 2px solid #000; }
+.admin-menu a { display: block; padding: 8px 12px; border: 2px solid #000; text-decoration: none; font-weight: 600; min-height: 44px; }
+.admin-menu a[aria-current], .admin-menu a:hover { color: #fff; background: #000; }
+.audit-detail { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 600px; }
+.timeline { padding-left: 24px; }
+.timeline li { margin-bottom: 20px; padding-left: 8px; }
+.preserve-lines { white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 24px 0; }
+.admin-filters .field { flex: 1 1 160px; }
+@media (max-width: 640px) { .admin-menu a { flex: 1 1 130px; } .audit-detail { max-width: 100%; } }

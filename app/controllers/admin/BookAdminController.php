@@ -7,10 +7,13 @@ final class BookAdminController
     {
         require_admin();
         $q = query('q', 100);
+        $total=Book::count($q,true); $pages=max(1,(int)ceil($total/25));
+        $page=min(max(1,input_int('pagina',$_GET)??1),$pages);
         view('admin/books', [
+            'page'=>$page,'pages'=>$pages,'total'=>$total,
             'title' => 'Livros',
             'q'     => $q,
-            'books' => Book::search($q, 500, 0, true),
+            'books' => Book::search($q, 25, ($page-1)*25, true),
         ], 'admin');
     }
 
@@ -157,7 +160,10 @@ final class BookAdminController
                 'min_stock' => input_int('min_stock'), 'active' => ($_POST['active'] ?? '') === '1' ? 1 : 0,
             ];
             if ($data['category_id'] !== null && !db_value('SELECT id FROM categories WHERE id=?', [$data['category_id']])) $errors['category_id'] = 'Escolha uma categoria válida.';
-            if ($data['isbn'] !== null && !preg_match('/^[0-9Xx -]{10,20}$/D', $data['isbn'])) $errors['isbn'] = 'Informe um ISBN com 10 ou 13 dígitos (hífens são aceitos).';
+            if ($data['isbn'] !== null) {
+                $data['isbn']=strtoupper(str_replace(['-',' '],'',$data['isbn']));
+                if (!preg_match('/^(?:[0-9]{13}|[0-9]{9}[0-9X])$/D',$data['isbn'])) $errors['isbn'] = 'Informe um ISBN com 10 ou 13 dígitos (hífens são aceitos).';
+            }
             if ($data['pages'] !== null && ($data['pages'] < 1 || $data['pages'] > 65535)) $errors['pages'] = 'Informe entre 1 e 65535 páginas.';
             if (input('pages', 10) !== '' && $data['pages'] === null) $errors['pages'] = 'Informe um número inteiro de páginas.';
             if ($data['cost_price'] === null && input('cost_price', 20) !== '') $errors['cost_price'] = 'Informe um custo válido.';

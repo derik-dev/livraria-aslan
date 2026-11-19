@@ -88,7 +88,49 @@ Para o Mercado Pago:
 
 Checkout, pedidos e painel não precisam mudar.
 
-## Estrutura
+## Painel administrativo ampliado
+
+O painel usa as mesmas cores, fonte e componentes da loja. As URLs são geradas por `url()`, incluindo a subpasta: `https://netpubli.com.br/livraria-eric-aslan/admin`.
+
+As áreas implementadas são resumo, livros, categorias, estoque, pedidos, pagamentos, frete, cupons, clientes, avaliações, mensagens, devoluções/trocas, banners, configurações e segurança. As listas principais têm busca, filtros e paginação. Cancelamentos são tratados no detalhe do pedido.
+
+### Estrutura do banco
+
+Para uma instalação nova, a ordem é `schema.sql`, `seed.sql`, `admin.sql`, `perfil_usuario.sql` e `modulos.sql`. `admin.sql` corresponde à extensão chamada `admin_painel.sql` no material original. As extensões com `ALTER TABLE` devem ser importadas uma única vez; se já foram aplicadas pelo phpMyAdmin, não importe novamente.
+
+**Dependência pendente:** `perfil_usuario.sql` ainda não foi disponibilizado neste checkout. A view `v_admin_attention` do arquivo `modulos.sql` depende de `orders.cancel_requested_at`. Sem a extensão de perfil, a criação dessa view falha. O painel verifica a existência das tabelas e do campo antes de oferecer as operações correspondentes. A implementação de cancelamento usa esse campo, registra a decisão na auditoria e na linha do tempo e encerra a solicitação ao aprovar ou recusar.
+
+Não reimporte `schema.sql` em uma loja com dados: ele apaga e recria as tabelas. Nenhum script de migração é executado automaticamente pelo painel.
+
+### Operações
+
+- Estoque: entrada/saída usa quantidade; ajuste usa o saldo final. Cada movimentação guarda responsável, motivo e saldo. Vendas, cancelamentos e reposições de devoluções também geram movimentos. Uma edição antiga do livro não sobrescreve um estoque que mudou.
+- Pedidos: seguem pendente → pago → enviado → entregue; cancelamentos repõem o estoque uma única vez. A confirmação manual de pagamento no pedido também registra o recebimento financeiro. Rastreio e observações internas são salvos separadamente; a linha do tempo registra responsável e data.
+- Pagamentos: tentativas, referências, Pix e JSON de gateway; confirmação, recusa e registro de estorno. O estorno registra uma transferência já realizada no banco/gateway; o painel não envia dinheiro nem chama uma API de gateway. Confirmações e estornos são limitados ao saldo do pedido/pagamento.
+- Comprovantes novos: JPG, PNG, WEBP ou PDF, até 5 MB, em `storage/proofs/`; download somente com sessão de administrador. O servidor precisa de `fileinfo` e permissão de gravação nessa pasta.
+- Devoluções: aprovação → recebimento → conclusão. A reposição é opcional ao receber e ocorre uma vez. Um reembolso na conclusão é vinculado ao saldo de um pagamento do pedido e registrado na auditoria.
+- Mensagens: a resposta é salva; ao marcar como respondida, o sistema tenta enviar pelo `mail()` do servidor e informa se o envio falhar. Avaliações têm aprovação, rejeição, resposta e exclusão.
+- Frete, cupons e banners: o painel mantém os dados e as regras. A vitrine/checkout devem consumir essas regras para aplicá-las à compra; esta entrega de admin não inclui um novo cálculo de frete por CEP, aplicação de cupons ou renderização de banners na vitrine.
+- Configurações: nome, e-mail, contato, Pix, frete fixo e regras de avaliações, devoluções e carrinho abandonado. Nome, remetente, chave/titular Pix e frete fixo são lidos pelo código compartilhado; agendamento de tarefas de carrinho abandonado não faz parte do painel.
+- Acesso: apenas administradores; clientes bloqueados perdem o acesso autenticado. Cinco falhas por e-mail ou vinte por IP em quinze minutos bloqueiam temporariamente novas tentativas, também pela tela de login da loja. O log registra as ações do painel sem guardar senhas.
+
+### Verificação local
+
+Os testes usam exclusivamente MariaDB/MySQL em `127.0.0.1:33079`, banco descartável `aslan_admin_test`, usuário local `root` sem senha. `tests/admin-integration.php --reset-test-database` apaga e recria **somente esse banco de teste**, sem ler `app/config.php`. A porta pode ser alterada por `LIVRARIA_TEST_PORT`.
+
+```powershell
+php tests/admin-integration.php --reset-test-database
+$env:LIVRARIA_CONFIG_FILE = "$PWD/.tools/config.php"
+php -S 127.0.0.1:8079 -t public tests/admin-router.php
+# Em outro terminal:
+node tests/admin-http.mjs
+```
+
+Habilite `pdo_mysql`, `fileinfo` e `mbstring` no PHP local. O teste de integração cria `.tools/config.php` com os dados do banco descartável. O roteador HTTP simula a subpasta do Apache. Se a extensão de perfil continuar ausente, o teste informa essa dependência e cria apenas uma coluna de fixture no banco descartável, sem criar uma migração de perfil presumida.
+
+Nenhum deploy ou alteração no banco de produção foi executado durante essa verificação.
+
+## Estrutura de arquivos
 
 ```
 app/            config, bootstrap, db, helpers, Router, rotas

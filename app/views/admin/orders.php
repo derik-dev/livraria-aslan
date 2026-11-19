@@ -1,5 +1,7 @@
 <?php /** @var string $status @var array $orders @var array $counts */ ?>
 <h1>Pedidos</h1>
+<form class="search-form" method="get"><label for="q">Buscar por número do pedido, nome ou e-mail</label><input type="hidden" name="status" value="<?= e($status) ?>"><?php if ($cancel): ?><input type="hidden" name="cancelamento" value="1"><?php endif; ?><div class="search-row"><input id="q" type="search" name="q" value="<?= e($q) ?>" maxlength="100"><button class="btn">Buscar</button></div></form>
+<?php if ($cancel): ?><p>Exibindo solicitações de cancelamento. <a href="<?= e(url('/admin/pedidos')) ?>">Ver todos</a></p><?php endif; ?>
 
 <nav class="filter-tabs" aria-label="Filtrar por status">
     <a class="btn <?= $status === '' ? '' : 'btn-outline' ?>" href="<?= e(url('/admin/pedidos')) ?>"<?= $status === '' ? ' aria-current="page"' : '' ?>>Todos (<?= (int) array_sum($counts) ?>)</a>
@@ -40,3 +42,4 @@
         </table>
     </div>
 <?php endif; ?>
+<?= render_template('admin/_pagination',compact('page','pages','total')+['path'=>'/admin/pedidos','filters'=>['q'=>$q,'status'=>$status,'cancelamento'=>$cancel?'1':'']]) ?>

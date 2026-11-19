@@ -62,6 +62,10 @@ final class Order
             }
 
             if (AdminSchema::has('order_status_history')) db_run('INSERT INTO order_status_history(order_id,user_id,new_status,note) VALUES (?,?,?,?)', [$orderId, $userId, 'pendente', 'Pedido criado']);
+            if (AdminSchema::has('payments')) {
+                $expiry=date('Y-m-d H:i:s',time()+max(1,(int)(StoreSettings::all()['pix_expires_minutes']??60))*60);
+                db_run('INSERT INTO payments(order_id,method,gateway,amount,pix_expires_at) VALUES (?,?,?,?,?)',[$orderId,$paymentMethod==='pix_manual'?'pix':'outro','manual',cents_to_decimal($subtotal+$shipping),$paymentMethod==='pix_manual'?$expiry:null]);
+            }
 
             $pdo->commit();
             return $orderId;

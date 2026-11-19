@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 define('APP_ROOT', dirname(__DIR__));
 
-$configFile = __DIR__ . '/config.php';
+$configFile = getenv('LIVRARIA_CONFIG_FILE') ?: __DIR__ . '/config.php';
 if (!is_file($configFile)) {
     http_response_code(500);
     exit('Arquivo app/config.php não encontrado. Copie app/config.example.php para app/config.php e preencha.');

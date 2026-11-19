@@ -52,5 +52,32 @@ $router->post('/admin/livros/{id}/excluir', [BookAdminController::class, 'destro
 $router->get('/admin/pedidos', [OrderAdminController::class, 'index']);
 $router->get('/admin/pedidos/{id}', [OrderAdminController::class, 'show']);
 $router->post('/admin/pedidos/{id}/status', [OrderAdminController::class, 'updateStatus']);
+$router->post('/admin/pedidos/{id}/dados', [OrderAdminController::class, 'metadata']);
+$router->post('/admin/pedidos/{id}/cancelamento', [OrderAdminController::class, 'cancellation']);
 
 $router->get('/admin/clientes', [CustomerAdminController::class, 'index']);
+$router->get('/admin/clientes/{id}', [CustomerAdminController::class, 'show']);
+$router->post('/admin/clientes/{id}/situacao', [CustomerAdminController::class, 'toggle']);
+
+foreach (array_keys(AdminResources::definitions()) as $area) {
+    $router->get('/admin/' . $area, [ResourceAdminController::class, 'index']);
+    $router->get('/admin/' . $area . '/novo', [ResourceAdminController::class, 'create']);
+    $router->post('/admin/' . $area, [ResourceAdminController::class, 'store']);
+    $router->get('/admin/' . $area . '/{id}/editar', [ResourceAdminController::class, 'edit']);
+    $router->post('/admin/' . $area . '/{id}', [ResourceAdminController::class, 'update']);
+    $router->post('/admin/' . $area . '/{id}/excluir', [ResourceAdminController::class, 'destroy']);
+}
+$router->get('/admin/estoque', [PanelAdminController::class, 'stock']);
+$router->post('/admin/estoque', [PanelAdminController::class, 'moveStock']);
+$router->get('/admin/configuracoes', [PanelAdminController::class, 'settings']);
+$router->post('/admin/configuracoes', [PanelAdminController::class, 'settings']);
+$router->get('/admin/seguranca', [PanelAdminController::class, 'security']);
+foreach (array_keys(AdminWorkflows::definitions()) as $area) {
+    $router->get('/admin/'.$area, [WorkflowAdminController::class, 'index']);
+    $router->get('/admin/'.$area.'/{id}', [WorkflowAdminController::class, 'show']);
+    $router->post('/admin/'.$area.'/{id}', [WorkflowAdminController::class, 'update']);
+    $router->post('/admin/'.$area.'/{id}/excluir', [WorkflowAdminController::class, 'destroy']);
+}
+$router->post('/admin/pagamentos', [WorkflowAdminController::class, 'storePayment']);
+$router->get('/admin/pagamentos/{id}/comprovante', [WorkflowAdminController::class, 'proof']);
+$router->post('/admin/pagamentos/{id}/comprovante', [WorkflowAdminController::class, 'uploadProof']);

@@ -27,7 +27,7 @@
             <tbody>
             <?php foreach ($customers as $c): ?>
                 <tr>
-                    <td data-label="Nome"><?= e($c['name']) ?></td>
+                    <td data-label="Nome"><a href="<?= e(url('/admin/clientes/' . (int) $c['id'])) ?>"><?= e($c['name']) ?></a><?php if (isset($c['active']) && !(int)$c['active']): ?><br><strong>Bloqueado</strong><?php endif; ?></td>
                     <td data-label="E-mail"><?= e($c['email']) ?></td>
                     <td data-label="Telefone"><?= e($c['phone'] ?? '') ?: '-' ?></td>
                     <td data-label="Cliente desde"><?= e(format_date($c['created_at'], false)) ?></td>
@@ -39,3 +39,4 @@
         </table>
     </div>
 <?php endif; ?>
+<?= render_template('admin/_pagination',compact('page','pages','total')+['path'=>'/admin/clientes','filters'=>['q'=>$q]]) ?>

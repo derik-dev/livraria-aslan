@@ -15,6 +15,7 @@ $flashes = take_flashes();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= e(asset('assets/css/style.css')) ?>">
+    <link rel="stylesheet" href="<?= e(asset('assets/css/admin.css')) ?>">
 </head>
 <body>
 <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -23,10 +24,6 @@ $flashes = take_flashes();
         <a class="logo" href="<?= e(url('/admin')) ?>">Painel</a>
         <nav class="main-nav" aria-label="Menu do painel">
             <?php if ($isAdmin): ?>
-                <a href="<?= e(url('/admin')) ?>">Resumo</a>
-                <a href="<?= e(url('/admin/livros')) ?>">Livros</a>
-                <a href="<?= e(url('/admin/pedidos')) ?>">Pedidos</a>
-                <a href="<?= e(url('/admin/clientes')) ?>">Clientes</a>
                 <a href="<?= e(url('/')) ?>">Ver loja</a>
                 <form method="post" action="<?= e(url('/admin/logout')) ?>" class="inline-form">
                     <?= csrf_field() ?>
@@ -38,6 +35,14 @@ $flashes = take_flashes();
         </nav>
     </div>
 </header>
+<?php if ($isAdmin): ?>
+<nav class="container admin-menu" aria-label="Áreas do painel">
+<?php foreach (['' => 'Resumo', 'livros' => 'Livros', 'categorias' => 'Categorias', 'estoque' => 'Estoque', 'pedidos' => 'Pedidos', 'pagamentos' => 'Pagamentos', 'frete' => 'Frete', 'cupons' => 'Cupons', 'clientes' => 'Clientes', 'avaliacoes' => 'Avaliações', 'mensagens' => 'Mensagens', 'devolucoes' => 'Devoluções e trocas', 'banners' => 'Banners', 'configuracoes' => 'Configurações', 'seguranca' => 'Segurança'] as $area => $label):
+    $path = '/admin' . ($area === '' ? '' : '/' . $area);
+    $active = $area === '' ? request_path() === $path : (request_path() === $path || str_starts_with(request_path(), $path . '/'));
+?><a href="<?= e(url($path)) ?>"<?= $active ? ' aria-current="page"' : '' ?>><?= e($label) ?></a><?php endforeach; ?>
+</nav>
+<?php endif; ?>
 
 <main id="conteudo" class="container main">
     <?php foreach ($flashes as $f): ?>

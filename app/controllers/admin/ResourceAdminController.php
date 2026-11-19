@@ -65,13 +65,14 @@ final class ResourceAdminController
         [$values, $errors] = AdminResources::validate($definition, $_POST);
         $table = $definition['table'];
         if ($id !== null && !db_value("SELECT id FROM `$table` WHERE id=?", [$id])) { render_error(404); return; }
-        if ($errors) { http_response_code(422); $this->form($id, $_POST, $errors); return; }
+        $posted = [];
+        foreach ($definition['fields'] as $name => $field) $posted[$name] = is_string($_POST[$name] ?? null) ? $_POST[$name] : '';
+        if ($errors) { http_response_code(422); $this->form($id, $posted, $errors); return; }
         $image = null;
         if (isset($definition['image'])) {
             $error = null; $image = handle_image_upload('image', $error);
-            if ($error !== null) { http_response_code(422); $this->form($id, $_POST, ['image' => $error]); return; }
+            if ($error !== null) { http_response_code(422); $this->form($id, $posted, ['image' => $error]); return; }
             if ($image !== null) $values['image'] = $image;
-            if ($id === null && $image === null) { http_response_code(422); $this->form($id, $_POST, ['image' => 'Escolha uma imagem.']); return; }
         }
         try {
             $id = AdminAudit::transaction(function () use ($id, $table, $values): int {
@@ -95,10 +96,10 @@ final class ResourceAdminController
         } catch (PDOException $e) {
             if ($image !== null) delete_upload($image);
             if ($e->getCode() !== '23000') throw $e;
-            http_response_code(422); $this->form($id, $_POST, ['_form' => 'Já existe um registro com esse código ou endereço.']); return;
+            http_response_code(422); $this->form($id, $posted, ['_form' => 'Já existe um registro com esse código ou endereço.']); return;
         } catch (DomainException $e) {
             if ($image !== null) delete_upload($image);
-            http_response_code(422); $this->form($id, $_POST, ['_form' => $e->getMessage()]); return;
+            http_response_code(422); $this->form($id, $posted, ['_form' => $e->getMessage()]); return;
         } catch (Throwable $e) {
             if ($image !== null) delete_upload($image);
             throw $e;

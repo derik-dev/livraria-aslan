@@ -22,6 +22,15 @@
     </a>
 </div>
 
+<?php if ($attention): ?><section class="section"><h2>Precisa de atenção</h2><div class="stats"><?php foreach ($attention as $item): ?><a class="stat" href="<?= e(url($item['path'])) ?>"><span class="stat-number"><?= (int) $item['count'] ?></span><span><?= e($item['label']) ?></span></a><?php endforeach; ?></div></section><?php endif; ?>
+<section class="section"><h2>Vendas por período</h2>
+<form method="get" class="card form-stack"><div class="form-grid"><div class="field"><label for="inicio">De</label><input id="inicio" name="inicio" type="date" value="<?= e($start) ?>" required></div><div class="field"><label for="fim">Até</label><input id="fim" name="fim" type="date" value="<?= e($end) ?>" required></div></div><button class="btn">Filtrar período</button></form>
+<?php if ($error): ?><p class="alert alert-error" role="alert"><?= e($error) ?></p><?php else: ?>
+<p class="section"><strong><?= e(money_cents($sales['revenue'])) ?></strong> em <?= (int) $sales['count'] ?> pedido(s). Considera pedidos pagos, enviados e entregues criados no período.</p>
+<?php if (!$sales['daily']): ?><p>Nenhuma venda no período.</p><?php else: ?><div class="table-wrap"><table><thead><tr><th>Dia</th><th>Pedidos</th><th>Vendas</th></tr></thead><tbody><?php foreach ($sales['daily'] as $day): ?><tr><td data-label="Dia"><?= e(format_date($day['day'],false)) ?></td><td data-label="Pedidos"><?= (int) $day['orders_count'] ?></td><td data-label="Vendas"><?= e(money($day['revenue'])) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
+<h3>Livros mais vendidos</h3><?php if (!$sales['top']): ?><p>Nenhum livro vendido no período.</p><?php else: ?><div class="table-wrap"><table><thead><tr><th>Livro</th><th>Unidades</th><th>Valor dos itens</th></tr></thead><tbody><?php foreach ($sales['top'] as $book): ?><tr><td data-label="Livro"><?= e($book['title']) ?></td><td data-label="Unidades"><?= (int) $book['units_sold'] ?></td><td data-label="Valor dos itens"><?= e(money($book['revenue'])) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
+<?php endif; ?></section>
+
 <section class="section">
     <div class="section-head">
         <h2>Pedidos pendentes</h2>
@@ -50,7 +59,7 @@
 </section>
 
 <section class="section">
-    <h2>Estoque baixo (<?= (int) $threshold ?> ou menos)</h2>
+    <h2>Estoque baixo</h2><p>Livros ativos no estoque mínimo ou abaixo dele.</p>
     <?php if (!$lowStock): ?>
         <p>Nenhum livro com estoque baixo.</p>
     <?php else: ?>
