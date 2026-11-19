@@ -341,3 +341,4 @@ th { background: #000; color: #fff; font-weight: 600; }
     .dedication-body { font-size: 26px; }
     a { text-decoration: none; }
 }
+.error-list { margin: 8px 0 0; padding-left: 24px; } .error-list li { margin: 4px 0; } .alert-error .error-list a { color: #000; }

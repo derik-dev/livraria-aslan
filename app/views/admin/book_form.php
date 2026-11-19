@@ -8,7 +8,18 @@ $aria = static fn (string $k): string => isset($errors[$k]) ? ' aria-invalid="tr
 <h1><?= $book === null ? 'Novo livro' : 'Editar livro' ?></h1>
 
 <?php if ($errors): ?>
-    <div class="alert alert-error" role="alert"><strong>Atenção:</strong> confira os campos marcados abaixo.<?= isset($errors['image']) ? '' : ' Se você escolheu uma imagem, selecione de novo.' ?></div>
+    <?php $fieldNames = ['title' => 'Título', 'author' => 'Autor', 'description' => 'Descrição', 'price' => 'Preço', 'stock' => 'Estoque',
+        'category_id' => 'Categoria', 'isbn' => 'ISBN', 'publisher' => 'Editora', 'pages' => 'Páginas', 'cost_price' => 'Custo',
+        'min_stock' => 'Estoque mínimo', 'image' => 'Imagem da capa']; ?>
+    <div class="alert alert-error" role="alert">
+        <strong>Atenção:</strong> o livro não foi salvo. Corrija:
+        <ul class="error-list">
+            <?php foreach ($errors as $key => $message): ?>
+                <li><a href="#<?= e($key) ?>"><?= e($fieldNames[$key] ?? $key) ?></a>: <?= e($message) ?></li>
+            <?php endforeach; ?>
+        </ul>
+        <?php if (!isset($errors['image'])): ?><p>A imagem escolhida não é guardada quando há erro: selecione de novo antes de salvar.</p><?php endif; ?>
+    </div>
 <?php endif; ?>
 
 <form method="post" action="<?= e($action) ?>" enctype="multipart/form-data" class="card form-stack" novalidate>

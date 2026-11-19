@@ -311,7 +311,7 @@ function valid_email(string $email): bool
 
 function parse_money(string $value): ?int
 {
-    $v = str_replace(['R$', ' '], '', $value);
+    $v = str_replace(['R$', '€', 'EUR', 'eur', ' ', "\u{00A0}"], '', trim($value));
     if (str_contains($v, ',')) {
         $v = str_replace(['.', ','], ['', '.'], $v);
     }
