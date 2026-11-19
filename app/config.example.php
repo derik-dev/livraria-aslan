@@ -5,7 +5,7 @@ return [
     'app_name'  => 'Livraria Aslan',
     // Endereço público da loja, sem barra no final. Usado nos links enviados por e-mail.
     'app_url'   => 'https://SEU-DOMINIO.com.br',
-    // Deixe '' se a loja fica na raiz do domínio. Se ficar em subpasta, ex.: '/loja'.
+    // Deixe '' para detectar sozinho (funciona na raiz ou em subpasta, ex.: /livraria-aslan).
     'base_path' => '',
     // true mostra detalhes de erro e o link de recuperação de senha na tela. Use false em produção.
     'debug'     => false,

@@ -30,7 +30,7 @@ Edite `app/config.php` (ele é versionado, o repositório é privado):
 | Campo | O que colocar |
 |---|---|
 | `app_url` | Endereço do site, ex.: `https://livrariaaslan.com.br` (sem barra no final) |
-| `base_path` | `''` se a loja fica na raiz do domínio; `'/loja'` se ficar numa subpasta |
+| `base_path` | Deixe `''`: a loja detecta sozinha se está na raiz ou numa subpasta (ex.: `/livraria-aslan`) |
 | `debug` | `true` só enquanto testa; `false` em produção |
 | `db.host` | `localhost` (padrão da Hostinger) |
 | `db.name` / `db.user` / `db.pass` | Os dados do passo 1 |

@@ -98,9 +98,25 @@ function is_https(): bool
         || (string) ($_SERVER['SERVER_PORT'] ?? '') === '443';
 }
 
+/**
+ * Subpasta onde a loja está publicada (ex.: "/livraria-aslan"), ou "" na raiz.
+ * Se config base_path estiver vazio, detecta pelo caminho do index.php.
+ */
 function base_path(): string
 {
-    return rtrim((string) config('base_path', ''), '/');
+    static $base = null;
+    if ($base !== null) {
+        return $base;
+    }
+    $configured = config('base_path', '');
+    if (is_string($configured) && trim($configured, '/') !== '') {
+        return $base = '/' . trim($configured, '/');
+    }
+    $dir = str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php')));
+    if (str_ends_with($dir, '/public')) {
+        $dir = substr($dir, 0, -strlen('/public'));
+    }
+    return $base = rtrim($dir, '/.');
 }
 
 function url(string $path = '/', array $query = []): string
