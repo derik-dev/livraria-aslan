@@ -36,7 +36,7 @@ final class HomeController
     public function show(int $id): void
     {
         $book = Book::find($id);
-        if ($book === null) {
+        if ($book === null || (int) ($book['active'] ?? 1) !== 1) {
             render_error(404);
             return;
         }
@@ -45,7 +45,7 @@ final class HomeController
             'title'  => $book['title'],
             'book'   => $book,
             'inCart' => $inCart,
-            'maxQty' => max(0, min((int) $book['stock'] - $inCart, (int) config('shop.max_qty_per_item', 99) - $inCart)),
+            'maxQty' => max(1, min((int) $book['stock'], (int) config('shop.max_qty_per_item', 99))),
         ]);
     }
 }

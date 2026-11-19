@@ -10,7 +10,7 @@ final class BookAdminController
         view('admin/books', [
             'title' => 'Livros',
             'q'     => $q,
-            'books' => Book::search($q, 500, 0),
+            'books' => Book::search($q, 500, 0, true),
         ], 'admin');
     }
 
@@ -38,7 +38,13 @@ final class BookAdminController
         }
 
         $data['image'] = $image;
-        $id = Book::create($data);
+        try {
+            $id = AdminBook::save(null, $data, null);
+        } catch (PDOException $e) {
+            delete_upload($image);
+            if ($e->getCode() !== '23000') throw $e;
+            http_response_code(422); $this->form(null, $this->formValues($data, null), ['isbn' => 'Este ISBN já está cadastrado.']); return;
+        } catch (Throwable $e) { delete_upload($image); throw $e; }
         flash('success', 'Livro "' . $data['title'] . '" cadastrado.');
         redirect('/admin/livros/' . $id . '/editar');
     }
@@ -93,7 +99,16 @@ final class BookAdminController
             $data['image'] = $oldImage;
         }
 
-        Book::update($id, $data);
+        try {
+            AdminBook::save($id, $data, input_int('expected_stock'));
+        } catch (DomainException $e) {
+            delete_upload($newImage);
+            http_response_code(422); $this->form($book, $this->formValues($data, $book['image']), ['stock' => $e->getMessage()]); return;
+        } catch (PDOException $e) {
+            delete_upload($newImage);
+            if ($e->getCode() !== '23000') throw $e;
+            http_response_code(422); $this->form($book, $this->formValues($data, $book['image']), ['isbn' => 'Este ISBN já está cadastrado.']); return;
+        } catch (Throwable $e) { delete_upload($newImage); throw $e; }
         if ($oldImage !== $data['image']) {
             delete_upload($oldImage);
         }
@@ -109,7 +124,8 @@ final class BookAdminController
             flash('error', 'Livro não encontrado.');
             redirect('/admin/livros');
         }
-        Book::delete($id);
+        try { AdminBook::delete($id); }
+        catch (DomainException $e) { flash('error', $e->getMessage()); redirect('/admin/livros/' . $id . '/editar'); }
         delete_upload($book['image']);
         flash('success', 'Livro "' . $book['title'] . '" excluído. Os pedidos antigos continuam com o nome e o preço do livro.');
         redirect('/admin/livros');
@@ -133,6 +149,22 @@ final class BookAdminController
         ];
 
         $errors = [];
+        if (AdminSchema::core()) {
+            $data += [
+                'category_id' => input_int('category_id'), 'isbn' => input('isbn', 20) ?: null,
+                'publisher' => input('publisher', 120) ?: null, 'pages' => input_int('pages'),
+                'cost_price' => input('cost_price', 20) === '' ? null : parse_money(input('cost_price', 20)),
+                'min_stock' => input_int('min_stock'), 'active' => ($_POST['active'] ?? '') === '1' ? 1 : 0,
+            ];
+            if ($data['category_id'] !== null && !db_value('SELECT id FROM categories WHERE id=?', [$data['category_id']])) $errors['category_id'] = 'Escolha uma categoria válida.';
+            if ($data['isbn'] !== null && !preg_match('/^[0-9Xx -]{10,20}$/D', $data['isbn'])) $errors['isbn'] = 'Informe um ISBN com 10 ou 13 dígitos (hífens são aceitos).';
+            if ($data['pages'] !== null && ($data['pages'] < 1 || $data['pages'] > 65535)) $errors['pages'] = 'Informe entre 1 e 65535 páginas.';
+            if (input('pages', 10) !== '' && $data['pages'] === null) $errors['pages'] = 'Informe um número inteiro de páginas.';
+            if ($data['cost_price'] === null && input('cost_price', 20) !== '') $errors['cost_price'] = 'Informe um custo válido.';
+            if ($data['cost_price'] !== null) $data['cost_price'] = cents_to_decimal($data['cost_price']);
+            if ($data['min_stock'] === null || $data['min_stock'] < 0 || $data['min_stock'] > 100000) $errors['min_stock'] = 'Informe um mínimo entre 0 e 100000.';
+        }
+        $data['stock_note'] = input('stock_note', 255);
         if (text_length($data['title']) < 2) {
             $errors['title'] = 'Informe o título.';
         }
@@ -161,17 +193,21 @@ final class BookAdminController
             'stock'       => $data['stock_raw'],
             'featured'    => $data['featured'],
             'image'       => $image,
-        ];
+        ] + array_intersect_key($data, array_flip(['category_id','isbn','publisher','pages','cost_price','min_stock','active','stock_note']));
     }
 
     private function form(?array $book, array $values, array $errors): void
     {
+        $extended = AdminSchema::core();
+        $values += ($book ?? []) + ['category_id' => '', 'isbn' => '', 'publisher' => '', 'pages' => '', 'cost_price' => '', 'min_stock' => 3, 'active' => 1, 'stock_note' => ''];
         view('admin/book_form', [
             'title'    => $book === null ? 'Novo livro' : 'Editar livro',
             'book'     => $book,
             'values'   => $values,
             'errors'   => $errors,
             'maxBytes' => (int) config('upload.max_bytes', 2 * 1024 * 1024),
+            'extended' => $extended,
+            'categories' => $extended ? db_all('SELECT id,name,active FROM categories ORDER BY name') : [],
         ], 'admin');
     }
 }

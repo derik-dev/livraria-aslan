@@ -7,7 +7,7 @@ final class Book
 
     public static function find(int $id): ?array
     {
-        return db_one('SELECT ' . self::COLUMNS . ' FROM books WHERE id = ?', [$id]);
+        return db_one('SELECT * FROM books WHERE id = ?', [$id]);
     }
 
     /** @return array<int, array> indexado pelo id */
@@ -18,7 +18,8 @@ final class Book
             return [];
         }
         $marks = implode(',', array_fill(0, count($ids), '?'));
-        $rows = db_all('SELECT ' . self::COLUMNS . " FROM books WHERE id IN ($marks)", $ids);
+        $active = self::activeFilter();
+        $rows = db_all('SELECT ' . self::COLUMNS . " FROM books WHERE id IN ($marks)$active", $ids);
         $out = [];
         foreach ($rows as $r) {
             $out[(int) $r['id']] = $r;
@@ -28,9 +29,10 @@ final class Book
 
     public static function featured(int $limit = 6): array
     {
-        $rows = db_all('SELECT ' . self::COLUMNS . ' FROM books WHERE featured = 1 ORDER BY created_at DESC, id DESC LIMIT ?', [$limit]);
+        $active = self::activeFilter();
+        $rows = db_all('SELECT ' . self::COLUMNS . " FROM books WHERE featured = 1$active ORDER BY created_at DESC, id DESC LIMIT ?", [$limit]);
         if (!$rows) {
-            $rows = db_all('SELECT ' . self::COLUMNS . ' FROM books ORDER BY created_at DESC, id DESC LIMIT ?', [$limit]);
+            $rows = db_all('SELECT ' . self::COLUMNS . " FROM books WHERE 1=1$active ORDER BY created_at DESC, id DESC LIMIT ?", [$limit]);
         }
         return $rows;
     }
@@ -80,12 +82,13 @@ final class Book
         ];
     }
 
-    public static function search(string $q, int $limit, int $offset): array
+    public static function search(string $q, int $limit, int $offset, bool $admin = false): array
     {
         [$where, $params] = self::searchWhere($q);
+        if (!$admin) $where = ($where ?: ' WHERE 1=1') . self::activeFilter();
         [$order, $orderParams] = self::relevanceOrder($q);
         $params = array_merge($params, $orderParams, [$limit, $offset]);
-        return db_all('SELECT ' . self::COLUMNS . " FROM books{$where}{$order} LIMIT ? OFFSET ?", $params);
+        return db_all('SELECT ' . ($admin ? '*' : self::COLUMNS) . " FROM books{$where}{$order} LIMIT ? OFFSET ?", $params);
     }
 
     /**
@@ -100,22 +103,29 @@ final class Book
         $authorMarks = implode(',', array_fill(0, count($authors), '?'));
         return db_all(
             'SELECT ' . self::COLUMNS . " FROM books
-             WHERE id NOT IN ($idMarks) AND stock > 0
+             WHERE id NOT IN ($idMarks) AND stock > 0" . self::activeFilter() . "
              ORDER BY CASE WHEN author IN ($authorMarks) THEN 0 ELSE 1 END, featured DESC, created_at DESC, id DESC
              LIMIT ?",
             array_merge($ids, $authors, [$limit])
         );
     }
 
-    public static function count(string $q = ''): int
+    public static function count(string $q = '', bool $admin = false): int
     {
         [$where, $params] = self::searchWhere($q);
+        if (!$admin) $where = ($where ?: ' WHERE 1=1') . self::activeFilter();
         return (int) db_value("SELECT COUNT(*) FROM books{$where}", $params);
     }
 
     public static function lowStock(int $threshold): array
     {
+        if (AdminSchema::has('books', 'min_stock')) return db_all('SELECT id,title,author,stock,min_stock FROM books WHERE active=1 AND stock<=min_stock ORDER BY stock,title');
         return db_all('SELECT id, title, author, stock FROM books WHERE stock <= ? ORDER BY stock ASC, title ASC', [$threshold]);
+    }
+
+    private static function activeFilter(): string
+    {
+        return AdminSchema::has('books', 'active') ? ' AND active=1' : '';
     }
 
     public static function create(array $d): int

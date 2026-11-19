@@ -19,7 +19,8 @@ function config(string $key, mixed $default = null): mixed
         }
         $value = $value[$part];
     }
-    return $value;
+    return class_exists('StoreSettings', false) || isset($GLOBALS['__settings_ready'])
+        ? StoreSettings::override($key, $value) : $value;
 }
 
 /* ---------------------------------------------------------------- saída */
@@ -351,8 +352,9 @@ function current_user(): ?array
     }
     if (!array_key_exists($id, $cache)) {
         $cache[$id] = User::find($id);
-        if ($cache[$id] === null) {
+        if ($cache[$id] === null || (int) ($cache[$id]['active'] ?? 1) !== 1) {
             unset($_SESSION['user_id']);
+            $cache[$id] = null;
         }
     }
     return $cache[$id];
@@ -417,7 +419,18 @@ function take_intended(string $fallback = '/'): string
 
 function cart(): array
 {
-    $raw = $_SESSION['cart'] ?? [];
+    return clean_items($_SESSION['cart'] ?? []);
+}
+
+/** Item da compra direta ("Comprar agora"), separado do carrinho. */
+function buy_now_items(): array
+{
+    return clean_items($_SESSION['buy_now'] ?? []);
+}
+
+/** @return array<int,int> só pares válidos [book_id => quantidade] */
+function clean_items(mixed $raw): array
+{
     if (!is_array($raw)) {
         return [];
     }

@@ -25,6 +25,7 @@ spl_autoload_register(static function (string $class): void {
 });
 
 date_default_timezone_set((string) config('timezone', 'America/Sao_Paulo'));
+$GLOBALS['__settings_ready'] = true;
 
 error_reporting(E_ALL);
 ini_set('display_errors', '0');

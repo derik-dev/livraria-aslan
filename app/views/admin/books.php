@@ -33,7 +33,7 @@
             <?php foreach ($books as $b): ?>
                 <tr>
                     <td data-label="Capa"><img class="thumb" src="<?= e(book_image($b['image'])) ?>" alt="" width="60" height="90"></td>
-                    <td data-label="Livro"><strong><?= e($b['title']) ?></strong><br><?= e($b['author']) ?></td>
+                    <td data-label="Livro"><strong><?= e($b['title']) ?></strong><br><?= e($b['author']) ?><?php if (isset($b['active']) && !(int) $b['active']): ?><br><strong>Inativo</strong><?php endif; ?></td>
                     <td data-label="Preço"><?= e(money($b['price'])) ?></td>
                     <td data-label="Estoque"><?= (int) $b['stock'] === 0 ? '<strong>Esgotado</strong>' : (int) $b['stock'] ?></td>
                     <td data-label="Destaque"><?= (int) $b['featured'] === 1 ? 'Sim' : 'Não' ?></td>

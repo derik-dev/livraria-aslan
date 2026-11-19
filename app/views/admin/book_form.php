@@ -13,6 +13,7 @@ $aria = static fn (string $k): string => isset($errors[$k]) ? ' aria-invalid="tr
 
 <form method="post" action="<?= e($action) ?>" enctype="multipart/form-data" class="card form-stack" novalidate>
     <?= csrf_field() ?>
+    <?php if ($book): ?><input type="hidden" name="expected_stock" value="<?= (int) $book['stock'] ?>"><?php endif; ?>
     <input type="hidden" name="MAX_FILE_SIZE" value="<?= (int) $maxBytes ?>">
 
     <div class="field">
@@ -43,6 +44,16 @@ $aria = static fn (string $k): string => isset($errors[$k]) ? ' aria-invalid="tr
         </div>
     </div>
 
+    <?php if ($extended): ?>
+    <div class="form-grid">
+        <div class="field"><label for="category_id">Categoria</label><select id="category_id" name="category_id"><option value="">Sem categoria</option><?php foreach ($categories as $category): ?><option value="<?= (int) $category['id'] ?>"<?= (int) $values['category_id'] === (int) $category['id'] ? ' selected' : '' ?>><?= e($category['name']) ?><?= (int) $category['active'] ? '' : ' (inativa)' ?></option><?php endforeach; ?></select><?= $err('category_id') ?></div>
+        <?php foreach (['isbn' => 'ISBN', 'publisher' => 'Editora', 'pages' => 'Páginas', 'cost_price' => 'Custo em reais', 'min_stock' => 'Estoque mínimo'] as $name => $label): ?>
+        <div class="field"><label for="<?= e($name) ?>"><?= e($label) ?></label><input id="<?= e($name) ?>" name="<?= e($name) ?>" value="<?= e($values[$name]) ?>"<?= in_array($name, ['pages','min_stock'], true) ? ' type="number" min="0" step="1"' : '' ?><?= $aria($name) ?>><?= $err($name) ?></div>
+        <?php endforeach; ?>
+    </div>
+    <div class="field"><label for="stock_note">Motivo da alteração de estoque</label><input id="stock_note" name="stock_note" maxlength="255" value="<?= e($values['stock_note']) ?>"></div>
+    <label class="check"><input type="checkbox" name="active" value="1"<?= (int) $values['active'] === 1 ? ' checked' : '' ?>>Livro ativo na loja</label>
+    <?php endif; ?>
     <label class="check">
         <input type="checkbox" name="featured" value="1"<?= (int) $values['featured'] === 1 ? ' checked' : '' ?>>
         Mostrar nos destaques da página inicial

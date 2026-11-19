@@ -63,12 +63,13 @@ final class AuthController
     public function login(): void
     {
         $email = strtolower(input('email', 190));
-        $password = (string) ($_POST['password'] ?? '');
-
-        $user = valid_email($email) ? User::findByEmailWithHash($email) : null;
-        if ($user === null || !password_verify($password, (string) $user['password_hash'])) {
-            http_response_code(422);
-            view('auth/login', ['title' => 'Entrar', 'email' => $email, 'error' => 'E-mail ou senha incorretos.']);
+        $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+        $result = AdminLogin::authenticate($email, $password);
+        $user = $result['user'];
+        if ($user === null) {
+            http_response_code($result['blocked'] ? 429 : 422);
+            if ($result['blocked']) header('Retry-After: 900');
+            view('auth/login', ['title' => 'Entrar', 'email' => $email, 'error' => $result['blocked'] ? 'Muitas tentativas. Aguarde 15 minutos.' : 'E-mail ou senha incorretos, ou conta bloqueada.']);
             return;
         }
 

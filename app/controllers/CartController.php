@@ -17,7 +17,7 @@ final class CartController
         $bookId = input_int('book_id');
         $qty = input_int('qty') ?? 1;
         $book = $bookId !== null && $bookId > 0 ? Book::find($bookId) : null;
-        if ($book === null) {
+        if ($book === null || (int) ($book['active'] ?? 1) !== 1) {
             flash('error', 'Livro não encontrado.');
             redirect('/catalogo');
         }
@@ -28,8 +28,6 @@ final class CartController
             redirect($backTo);
         }
 
-        $current = cart()[(int) $book['id']] ?? 0;
-        $wanted = $current + $qty;
         $stock = (int) $book['stock'];
         $maxPerItem = (int) config('shop.max_qty_per_item', 99);
 
@@ -37,6 +35,23 @@ final class CartController
             flash('error', 'Este livro está esgotado.');
             redirect($backTo);
         }
+
+        // "Comprar agora": vai direto ao checkout só com este livro, sem mexer no carrinho.
+        if (input('buy_now', 1) === '1') {
+            if ($qty > $stock) {
+                flash('error', "Só temos {$stock} unidade(s) deste livro.");
+                redirect($backTo);
+            }
+            if ($qty > $maxPerItem) {
+                flash('error', "O limite é de {$maxPerItem} unidades por livro.");
+                redirect($backTo);
+            }
+            $_SESSION['buy_now'] = [(int) $book['id'] => $qty];
+            redirect('/checkout?agora=1');
+        }
+
+        $current = cart()[(int) $book['id']] ?? 0;
+        $wanted = $current + $qty;
         if ($wanted > $stock) {
             flash('error', "Só temos {$stock} unidade(s) deste livro" . ($current > 0 ? " e você já tem {$current} no carrinho." : '.'));
             redirect($backTo);

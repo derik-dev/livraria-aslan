@@ -5,13 +5,15 @@ final class User
 {
     public static function find(int $id): ?array
     {
-        return db_one('SELECT id, name, email, phone, role, created_at FROM users WHERE id = ?', [$id]);
+        $extra = AdminSchema::has('users', 'active') ? ', active, last_login_at' : '';
+        return db_one('SELECT id, name, email, phone, role, created_at' . $extra . ' FROM users WHERE id = ?', [$id]);
     }
 
     /** Inclui password_hash: use só para autenticação. */
     public static function findByEmailWithHash(string $email): ?array
     {
-        return db_one('SELECT id, name, email, password_hash, role FROM users WHERE email = ?', [$email]);
+        $extra = AdminSchema::has('users', 'active') ? ', active' : '';
+        return db_one('SELECT id, name, email, password_hash, role' . $extra . ' FROM users WHERE email = ?', [$email]);
     }
 
     public static function passwordHash(int $id): ?string

@@ -9,6 +9,7 @@
 
 <form method="post" action="<?= e(url('/checkout')) ?>" class="checkout" data-once>
     <?= csrf_field() ?>
+    <input type="hidden" name="mode" value="<?= $buyNow ? 'agora' : 'carrinho' ?>">
     <div class="checkout-main">
         <section class="card">
             <h2>1. Entrega</h2>
@@ -62,6 +63,9 @@
             <dt class="total">Total</dt><dd class="total"><?= e(money_cents($summary['total_cents'])) ?></dd>
         </dl>
         <button class="btn btn-block" type="submit"<?= $gateways ? '' : ' disabled' ?>>Confirmar pedido</button>
-        <p><a href="<?= e(url('/carrinho')) ?>">Voltar ao carrinho</a></p>
+        <p><a href="<?= e(url($backTo)) ?>"><?= $buyNow ? 'Voltar ao livro' : 'Voltar ao carrinho' ?></a></p>
+        <?php if ($buyNow): ?>
+            <p>Compra direta: só este livro. Seu carrinho continua guardado.</p>
+        <?php endif; ?>
     </aside>
 </form>
