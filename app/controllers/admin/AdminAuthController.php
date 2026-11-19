@@ -8,7 +8,7 @@ final class AdminAuthController
         if (is_admin()) {
             redirect('/admin');
         }
-        view('admin/login', ['title' => 'Entrar no painel', 'email' => '', 'error' => null], 'admin');
+        view('admin/login', ['title' => 'Entrar no painel', 'email' => '', 'error' => null, 'loginPage' => true], 'admin');
     }
 
     public function login(): void
@@ -25,6 +25,7 @@ final class AdminAuthController
                 'title' => 'Entrar no painel',
                 'email' => $email,
                 'error' => $result['blocked'] ? 'Muitas tentativas. Aguarde 15 minutos antes de tentar novamente.' : 'E-mail ou senha incorretos, ou esta conta não tem acesso ao painel.',
+                'loginPage' => true,
             ], 'admin');
             return;
         }

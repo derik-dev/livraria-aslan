@@ -1,7 +1,7 @@
 <?php
 /** @var string $content */
 $pageTitle = (isset($title) && $title !== '' ? $title . ' | ' : '') . 'Painel ' . config('app_name');
-$isAdmin = is_admin();
+$isAdmin = is_admin() && empty($loginPage); // na tela de login o menu some, mesmo com sessão aberta
 $flashes = take_flashes();
 ?>
 <!doctype html>

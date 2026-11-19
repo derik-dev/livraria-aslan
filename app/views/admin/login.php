@@ -2,6 +2,12 @@
 <div class="narrow">
     <h1>Entrar no painel</h1>
     <p>Acesso só para administradores da loja.</p>
+    <?php $session = current_user(); if ($session !== null && $session['role'] === 'admin'): ?>
+        <div class="alert alert-info" role="status">
+            Este navegador já está no painel como <strong><?= e($session['name']) ?></strong> (<?= e($session['email']) ?>).
+            <a href="<?= e(url('/admin')) ?>">Ir para o painel</a>
+        </div>
+    <?php endif; ?>
     <?php if ($error !== null): ?>
         <div class="alert alert-error" role="alert"><strong>Atenção:</strong> <?= e($error) ?></div>
     <?php endif; ?>
