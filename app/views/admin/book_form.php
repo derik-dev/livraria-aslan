@@ -33,7 +33,7 @@ $aria = static fn (string $k): string => isset($errors[$k]) ? ' aria-invalid="tr
     </div>
     <div class="form-grid">
         <div class="field">
-            <label for="price">Preço em reais (ex.: 39,90)</label>
+            <label for="price">Preço em euros (ex.: 39,90)</label>
             <input id="price" name="price" value="<?= e($values['price']) ?>" inputmode="decimal" maxlength="20" required<?= $aria('price') ?>>
             <?= $err('price') ?>
         </div>
@@ -47,7 +47,7 @@ $aria = static fn (string $k): string => isset($errors[$k]) ? ' aria-invalid="tr
     <?php if ($extended): ?>
     <div class="form-grid">
         <div class="field"><label for="category_id">Categoria</label><select id="category_id" name="category_id"><option value="">Sem categoria</option><?php foreach ($categories as $category): ?><option value="<?= (int) $category['id'] ?>"<?= (int) $values['category_id'] === (int) $category['id'] ? ' selected' : '' ?>><?= e($category['name']) ?><?= (int) $category['active'] ? '' : ' (inativa)' ?></option><?php endforeach; ?></select><?= $err('category_id') ?></div>
-        <?php foreach (['isbn' => 'ISBN', 'publisher' => 'Editora', 'pages' => 'Páginas', 'cost_price' => 'Custo em reais', 'min_stock' => 'Estoque mínimo'] as $name => $label): ?>
+        <?php foreach (['isbn' => 'ISBN', 'publisher' => 'Editora', 'pages' => 'Páginas', 'cost_price' => 'Custo em euros', 'min_stock' => 'Estoque mínimo'] as $name => $label): ?>
         <div class="field"><label for="<?= e($name) ?>"><?= e($label) ?></label><input id="<?= e($name) ?>" name="<?= e($name) ?>" value="<?= e($values[$name]) ?>"<?= in_array($name, ['pages','min_stock'], true) ? ' type="number" min="0" step="1"' : '' ?><?= $aria($name) ?>><?= $err($name) ?></div>
         <?php endforeach; ?>
     </div>
@@ -58,6 +58,13 @@ $aria = static fn (string $k): string => isset($errors[$k]) ? ' aria-invalid="tr
         <input type="checkbox" name="featured" value="1"<?= (int) $values['featured'] === 1 ? ' checked' : '' ?>>
         Mostrar nos destaques da página inicial
     </label>
+    <?php if (AdminSchema::has('books', 'allows_dedication')): ?>
+    <label class="check">
+        <input type="checkbox" name="allows_dedication" value="1"<?= (int) ($values['allows_dedication'] ?? 0) === 1 ? ' checked' : '' ?>>
+        Permite dedicatória
+    </label>
+    <?php if (setting('dedication_enabled', '0') !== '1'): ?><p>A dedicatória está desligada em Configurações. Ligue lá para ela aparecer na loja.</p><?php endif; ?>
+    <?php endif; ?>
 
     <div class="field">
         <label for="image">Imagem da capa (JPG, PNG ou WEBP, até <?= e(number_format($maxBytes / 1024 / 1024, 0)) ?> MB)</label>

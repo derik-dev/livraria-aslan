@@ -62,7 +62,7 @@ Para rodar localmente, se um dia precisar: `php -S localhost:8000 -t public` com
 
 **Loja:** `/` início · `/catalogo` · `/livro/{id}` · `/carrinho` · `/checkout` · `/pedido/{id}/confirmacao` · `/cadastro` · `/login` · `/recuperar-senha` · `/perfil` · `/pedidos` · `/pedidos/{id}`
 
-**Painel:** `/admin` resumo · `/admin/livros` · `/admin/livros/novo` · `/admin/pedidos` · `/admin/clientes`. Quem não está logado vai para `/admin/login`; cliente comum recebe 403.
+**Painel:** `/admin` resumo · `/admin/livros` · `/admin/livros/novo` · `/admin/pedidos` · `/admin/dedicatorias` · `/admin/clientes` · `/admin/configuracoes`. Quem não está logado vai para `/admin/login`; cliente comum recebe 403.
 
 ## 7. Roteiro de teste na Hostinger
 
@@ -71,6 +71,44 @@ Para rodar localmente, se um dia precisar: `php -S localhost:8000 -t public` com
 3. **Admin, livro:** entre em `/admin/login`, cadastre um livro com imagem JPG/PNG/WEBP de até 2 MB e confira se ele aparece no catálogo.
 4. **Admin, status:** em `/admin/pedidos`, abra o pedido e mude para **Pago**, **Enviado** e **Entregue**. O cliente vê o andamento em `/pedidos/{id}`. Se cancelar, os livros voltam ao estoque.
 5. **Recuperar senha:** com `debug => true` o link também aparece na tela, e no servidor ele fica em `storage/logs/mail.log`.
+
+## Melhorias 1: frete grátis, dedicatória e NIF
+
+> **Antes de testar:** o `database/melhorias_1.sql` já precisa estar importado (colunas `users.nif`, `books.allows_dedication`, `cart_items.dedication`, `order_items.dedication`, `orders.invoice_*` e a view `v_dedications_to_prepare`). Depois, em **Admin > Configurações**, ligue o que quiser usar. **Tudo vem desligado.** Sem isso, a barra e a dedicatória não aparecem.
+
+**Moeda:** a loja agora mostra os preços em euro (`39,90 €`). Os valores no banco não mudam, só o símbolo.
+
+### O que mudou
+
+- **Carrinho no banco** (`carts` / `cart_items`). O visitante fica ligado à sessão. Quem está logado reencontra o carrinho no próximo login, e o carrinho de visitante é somado ao da conta quando a pessoa entra.
+- **Frete:**
+  - Agora usa as faixas de **Admin > Frete** (`shipping_rates`), na ordem: faixa de CEP, depois faixa do estado, depois a faixa padrão (sem estado e sem CEP). Sem CEP, vale só a faixa padrão.
+  - Sem `free_above` na faixa, vale **Frete grátis a partir de** das Configurações (`free_shipping_min`). Sem nenhuma faixa, vale o frete fixo das Configurações.
+  - ⚠️ **Os valores das faixas passam a valer na compra.** Confira-os em Admin > Frete.
+- **Barra de frete grátis:** no carrinho e no mini-carrinho do topo (clique em "Carrinho (n)"). No carrinho ela muda ao digitar a quantidade, mas isso é só visual. O frete é sempre recalculado no servidor, e o checkout recalcula pelo CEP digitado. Se o total mudar, o pedido **não** é criado: a tela mostra o novo total e pede para confirmar de novo.
+- **Dedicatória:**
+  - Aparece só nos livros com **Permite dedicatória** marcado e com a opção ligada nas Configurações. O limite vem de `dedication_max_chars`, sem passar do tamanho da coluna no banco, e é conferido no servidor no carrinho e de novo ao criar o pedido.
+  - É uma dedicatória por livro do carrinho.
+  - Aparece no resumo do checkout, em Meus pedidos e no pedido do admin.
+  - Em **Admin > Dedicatórias** há a lista para imprimir: um bloco por exemplar, com nº do pedido, título, destinatário e texto.
+- **NIF e fatura:**
+  - NIF opcional no perfil. No checkout, a caixa "Fatura com NIF" já vem preenchida e copia o nome e o NIF para o pedido. O NIF é validado (9 dígitos, módulo 11), e vazio vale como consumidor final, a não ser que **NIF obrigatório** esteja ligado.
+  - No pedido do admin, registre o número, o link https e a data da fatura emitida no programa certificado. **O site não emite fatura oficial.** Com o link salvo, o cliente vê **Baixar fatura**.
+
+### Roteiro de teste (Hostinger)
+
+1. **Configurações:** ligue a barra de frete, a dedicatória (limite 20, para testar) e deixe o NIF obrigatório desligado.
+2. **Livro:** em Admin > Livros, edite um livro e marque **Permite dedicatória**.
+3. **Frete grátis, sem atingir:** como visitante, ponha 1 livro barato no carrinho. A barra mostra "Faltam X,XX € para frete grátis". Mude a quantidade: a barra muda na hora. Clique em salvar e confira se o frete do resumo bate.
+4. **Frete grátis, atingido:** aumente até passar do valor. Aparece "Você ganhou frete grátis" e o frete fica "Grátis".
+5. **Dedicatória estourada:** na página do livro, o campo para em 20 caracteres e o contador mostra "20 de 20 caracteres (limite atingido)". Para testar o servidor, abra o DevTools (F12), apague o `maxlength` do campo e envie 30 caracteres. Tem que aparecer o erro "A dedicatória tem 30 caracteres. O limite é de 20." e nada é salvo.
+6. **Dedicatória ok:** escreva uma de até 20, adicione ao carrinho, edite no carrinho, finalize. Ela aparece no resumo do checkout, em Meus pedidos > pedido e em Admin > Pedidos.
+7. **NIF válido:** no perfil, salve `123456789`. No checkout ele vem preenchido. Finalize, e o pedido do admin mostra o nome e o NIF.
+8. **NIF inválido:** tente `123456780` no perfil ou no checkout. Aparece um erro grande e o pedido não é criado.
+9. **NIF vazio:** deixe em branco, e o pedido sai como "consumidor final". Ligue **NIF obrigatório** e tente de novo: agora é recusado.
+10. **Fatura:** no pedido do admin, salve o número, um link `https://...pdf` e a data. Em Meus pedidos aparece **Baixar fatura**. Um link `http://` ou `javascript:` é recusado.
+11. **Impressão:** em Admin > Dedicatórias, clique em **Imprimir dedicatórias**. A visualização tem que sair só em preto e branco, com letra grande, um bloco por livro e sem menu.
+12. **Login juntando carrinho:** como visitante, adicione um livro, entre na conta e confira se o carrinho continua lá.
 
 ## Pagamento: como plugar o Mercado Pago depois
 

@@ -41,10 +41,16 @@ final class HomeController
             return;
         }
         $inCart = cart()[$id] ?? 0;
+        $old = $_SESSION['_old_dedication'] ?? null;
+        unset($_SESSION['_old_dedication']);
         view('shop/book', [
             'title'  => $book['title'],
             'book'   => $book,
             'inCart' => $inCart,
+            'allowsDedication' => Dedication::allowed($book),
+            'dedicationMax'    => Dedication::max(),
+            'dedication'       => is_array($old) && ($old['id'] ?? null) === $id && is_string($old['text'] ?? null)
+                ? $old['text'] : (cart_dedications()[$id] ?? ''),
             'maxQty' => max(1, min((int) $book['stock'], (int) config('shop.max_qty_per_item', 99))),
         ]);
     }

@@ -12,7 +12,11 @@
         <tbody>
         <?php foreach ($items as $it): ?>
             <tr>
-                <td data-label="Livro"><strong><?= e($it['title']) ?></strong><br><?= e($it['author']) ?></td>
+                <td data-label="Livro"><strong><?= e($it['title']) ?></strong><br><?= e($it['author']) ?>
+                    <?php if (!empty($it['dedication'])): ?>
+                        <p class="dedication-text"><strong>Dedicatória:</strong> <?= e($it['dedication']) ?></p>
+                    <?php endif; ?>
+                </td>
                 <td data-label="Preço"><?= e(money($it['unit_price'])) ?></td>
                 <td data-label="Qtd."><?= (int) $it['quantity'] ?></td>
                 <td data-label="Total"><?= e(money($it['line_total'])) ?></td>
@@ -35,3 +39,7 @@
     CEP <?= e($order['ship_cep']) ?>
     <?php if (!empty($order['ship_phone'])): ?><br>Telefone: <?= e($order['ship_phone']) ?><?php endif; ?>
 </address>
+<?php if (array_key_exists('invoice_nif', $order) && (!empty($order['invoice_nif']) || !empty($order['invoice_name']))): ?>
+    <h3>Fatura</h3>
+    <p><?= e($order['invoice_name'] ?: '-') ?><br>NIF: <?= $order['invoice_nif'] ? e($order['invoice_nif']) : 'consumidor final' ?></p>
+<?php endif; ?>

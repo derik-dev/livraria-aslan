@@ -163,4 +163,61 @@
             cep.value = d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d;
         });
     }
+
+    // Formata centavos como no PHP: 1.234,50 €
+    function money(cents) {
+        var parts = (Math.max(0, cents) / 100).toFixed(2).split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return parts[0] + ',' + parts[1] + ' €';
+    }
+
+    // Contador de caracteres da dedicatória (conta como o servidor: por caractere).
+    document.querySelectorAll('textarea[data-counter]').forEach(function (area) {
+        var out = document.getElementById(area.getAttribute('data-counter'));
+        if (!out) return;
+        var max = parseInt(out.getAttribute('data-max'), 10) || 0;
+        function update() {
+            var len = Array.from(area.value).length;
+            out.textContent = len + ' de ' + max + ' caracteres';
+            out.classList.toggle('counter-full', max > 0 && len >= max);
+        }
+        area.addEventListener('input', update);
+        update();
+    });
+
+    // Barra de frete grátis no carrinho: só visual. O frete real é recalculado no servidor.
+    var liveBar = document.querySelector('.free-bar[data-free-live]');
+    var qtyInputs = document.querySelectorAll('.qty-input[data-price]');
+    if (liveBar && qtyInputs.length) {
+        var freeFrom = parseInt(liveBar.getAttribute('data-free-from'), 10) || 0;
+        var text = liveBar.querySelector('.free-bar-text');
+        var fill = liveBar.querySelector('.free-bar-fill');
+        var updateBar = function () {
+            var subtotal = 0;
+            qtyInputs.forEach(function (input) {
+                var qty = parseInt(input.value, 10);
+                var price = parseInt(input.getAttribute('data-price'), 10) || 0;
+                if (qty > 0) subtotal += qty * price;
+            });
+            var missing = Math.max(0, freeFrom - subtotal);
+            text.textContent = '';
+            var strong = document.createElement('strong');
+            if (missing > 0) {
+                strong.textContent = money(missing);
+                text.appendChild(document.createTextNode('Faltam '));
+                text.appendChild(strong);
+                text.appendChild(document.createTextNode(' para frete grátis'));
+            } else {
+                strong.textContent = 'Você ganhou frete grátis';
+                text.appendChild(strong);
+            }
+            fill.style.width = (freeFrom > 0 ? Math.min(100, Math.floor(subtotal * 100 / freeFrom)) : 0) + '%';
+        };
+        qtyInputs.forEach(function (input) { input.addEventListener('input', updateBar); });
+    }
+
+    // Botão de imprimir (dedicatórias a preparar)
+    document.querySelectorAll('[data-print]').forEach(function (btn) {
+        btn.addEventListener('click', function () { window.print(); });
+    });
 })();

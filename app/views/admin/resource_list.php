@@ -11,7 +11,7 @@
         <td data-label="<?= e($label) ?>"><?php
             $value = $row[$column];
             if ($column === 'active') $value = (int) $value === 1 ? 'Sim' : 'Não';
-            elseif ($column === 'type') $value = $value === 'percent' ? 'Porcentagem' : 'Valor em reais';
+            elseif ($column === 'type') $value = $value === 'percent' ? 'Porcentagem' : 'Valor em euros';
             elseif (str_ends_with($column, '_at')) $value = $value ? format_date($value) : 'Sem prazo';
             elseif (in_array($column, ['price', 'free_from', 'min_order'], true)) $value = $value === null ? '—' : money($value);
             elseif ($column === 'value') $value = $row['type'] === 'percent' ? number_format((float) $value, 2, ',', '.') . '%' : money($value);

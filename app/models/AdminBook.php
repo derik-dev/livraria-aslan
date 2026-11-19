@@ -14,6 +14,9 @@ final class AdminBook
                 'price' => cents_to_decimal($data['price_cents']), 'stock' => $data['stock'],
                 'image' => $data['image'], 'featured' => $data['featured'],
             ];
+            if (AdminSchema::has('books', 'allows_dedication')) {
+                $values['allows_dedication'] = (int) ($data['allows_dedication'] ?? 0);
+            }
             if (AdminSchema::core()) {
                 $values += array_intersect_key($data, array_flip(['category_id','isbn','publisher','pages','cost_price','min_stock','active']));
             }

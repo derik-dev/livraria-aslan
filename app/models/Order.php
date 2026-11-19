@@ -9,11 +9,18 @@ final class Order
      * com mensagem amigável se algo mudou desde que o cliente montou o carrinho.
      *
      * @param array<int,int> $cart  [book_id => quantidade]
+     * @param array{dedications?:array<int,string>, invoice?:array{nif:string,name:string}} $extra
      */
-    public static function create(int $userId, array $cart, array $ship, string $paymentMethod): int
+    public static function create(int $userId, array $cart, array $ship, string $paymentMethod, array $extra = []): int
     {
         if (!$cart) {
             throw new DomainException('Seu carrinho está vazio.');
+        }
+        $dedications = $extra['dedications'] ?? [];
+        $useDedication = Dedication::enabled();
+        $invoice = $extra['invoice'] ?? ['nif' => '', 'name' => ''];
+        if ($invoice['nif'] !== '' && !Nif::valid($invoice['nif'])) {
+            throw new DomainException('O NIF informado não é válido.');
         }
         $pdo = db();
         $pdo->beginTransaction();
@@ -34,28 +41,52 @@ final class Order
                     ));
                 }
                 $price = to_cents($book['price']);
-                $lines[] = ['book' => $book, 'qty' => $qty, 'price' => $price, 'line' => $price * $qty];
+                // Dedicatória só vale se o livro ainda permite; o tamanho é conferido de novo aqui.
+                $dedication = null;
+                if ($useDedication && (int) ($book['allows_dedication'] ?? 0) === 1 && ($dedications[$bookId] ?? '') !== '') {
+                    [$dedication, $dedError] = Dedication::read($dedications[$bookId]);
+                    if ($dedError !== null) {
+                        throw new DomainException('"' . $book['title'] . '": ' . $dedError);
+                    }
+                    $dedication = $dedication === '' ? null : $dedication;
+                }
+                $lines[] = ['book' => $book, 'qty' => $qty, 'price' => $price, 'line' => $price * $qty, 'dedication' => $dedication];
                 $subtotal += $price * $qty;
             }
-            $shipping = shipping_cents($subtotal);
+            $quote = Shipping::quote($subtotal, $ship['cep'] ?? null, $ship['state'] ?? null);
+            $shipping = $quote['shipping_cents'];
 
+            $columns = ['user_id', 'status', 'subtotal', 'shipping', 'total', 'payment_method',
+                'ship_name', 'ship_phone', 'ship_cep', 'ship_street', 'ship_number', 'ship_complement', 'ship_district', 'ship_city', 'ship_state'];
+            $values = [
+                $userId, 'pendente', cents_to_decimal($subtotal), cents_to_decimal($shipping), cents_to_decimal($subtotal + $shipping),
+                $paymentMethod, $ship['name'], $ship['phone'] === '' ? null : $ship['phone'],
+                $ship['cep'], $ship['street'], $ship['number'], $ship['complement'] === '' ? null : $ship['complement'],
+                $ship['district'], $ship['city'], $ship['state'],
+            ];
+            if (AdminSchema::has('orders', 'shipping_label')) {
+                array_push($columns, 'shipping_label', 'shipping_days');
+                array_push($values, $quote['label'], $quote['days']);
+            }
+            if (Nif::enabled()) {
+                array_push($columns, 'invoice_nif', 'invoice_name');
+                array_push($values, $invoice['nif'] === '' ? null : $invoice['nif'], $invoice['name'] === '' ? null : $invoice['name']);
+            }
             db_run(
-                'INSERT INTO orders (user_id, status, subtotal, shipping, total, payment_method,
-                    ship_name, ship_phone, ship_cep, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state)
-                 VALUES (?, \'pendente\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [
-                    $userId, cents_to_decimal($subtotal), cents_to_decimal($shipping), cents_to_decimal($subtotal + $shipping),
-                    $paymentMethod, $ship['name'], $ship['phone'] === '' ? null : $ship['phone'],
-                    $ship['cep'], $ship['street'], $ship['number'], $ship['complement'] === '' ? null : $ship['complement'],
-                    $ship['district'], $ship['city'], $ship['state'],
-                ]
+                'INSERT INTO orders (`' . implode('`, `', $columns) . '`) VALUES (' . implode(', ', array_fill(0, count($values), '?')) . ')',
+                $values
             );
             $orderId = (int) $pdo->lastInsertId();
 
+            $withDedication = AdminSchema::has('order_items', 'dedication');
             foreach ($lines as $l) {
                 db_run(
-                    'INSERT INTO order_items (order_id, book_id, title, author, unit_price, quantity, line_total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                    [$orderId, (int) $l['book']['id'], $l['book']['title'], $l['book']['author'], cents_to_decimal($l['price']), $l['qty'], cents_to_decimal($l['line'])]
+                    'INSERT INTO order_items (order_id, book_id, title, author, unit_price, quantity, line_total' . ($withDedication ? ', dedication' : '') . ')
+                     VALUES (?, ?, ?, ?, ?, ?, ?' . ($withDedication ? ', ?' : '') . ')',
+                    array_merge(
+                        [$orderId, (int) $l['book']['id'], $l['book']['title'], $l['book']['author'], cents_to_decimal($l['price']), $l['qty'], cents_to_decimal($l['line'])],
+                        $withDedication ? [$l['dedication']] : []
+                    )
                 );
                 db_run('UPDATE books SET stock = stock - ? WHERE id = ?', [$l['qty'], (int) $l['book']['id']]);
                 AdminStock::record((int) $l['book']['id'], 'venda', -$l['qty'], (int) $l['book']['stock'] - $l['qty'], 'Pedido nº ' . $orderId);
@@ -93,16 +124,24 @@ final class Order
 
     public static function items(int $orderId): array
     {
-        return db_all('SELECT book_id, title, author, unit_price, quantity, line_total FROM order_items WHERE order_id = ? ORDER BY id', [$orderId]);
+        $extra = AdminSchema::has('order_items', 'dedication') ? ', dedication' : '';
+        return db_all('SELECT book_id, title, author, unit_price, quantity, line_total' . $extra . ' FROM order_items WHERE order_id = ? ORDER BY id', [$orderId]);
+    }
+
+    /** Grava os dados da fatura emitida no programa certificado. */
+    public static function setInvoice(int $id, ?string $number, ?string $url, ?string $issuedAt): void
+    {
+        db_run('UPDATE orders SET invoice_number = ?, invoice_url = ?, invoice_issued_at = ? WHERE id = ?', [$number, $url, $issuedAt, $id]);
     }
 
     public static function forUser(int $userId): array
     {
+        $invoice = AdminSchema::has('orders', 'invoice_url') ? ', o.invoice_url' : '';
         return db_all(
-            'SELECT o.id, o.status, o.total, o.created_at, COALESCE(SUM(i.quantity), 0) AS items_count
+            'SELECT o.id, o.status, o.total, o.created_at' . $invoice . ', COALESCE(SUM(i.quantity), 0) AS items_count
              FROM orders o LEFT JOIN order_items i ON i.order_id = o.id
              WHERE o.user_id = ?
-             GROUP BY o.id, o.status, o.total, o.created_at
+             GROUP BY o.id, o.status, o.total, o.created_at' . $invoice . '
              ORDER BY o.created_at DESC, o.id DESC',
             [$userId]
         );

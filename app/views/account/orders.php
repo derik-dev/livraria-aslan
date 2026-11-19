@@ -27,7 +27,12 @@
                     <td data-label="Livros"><?= (int) $o['items_count'] ?></td>
                     <td data-label="Total"><?= e(money($o['total'])) ?></td>
                     <td data-label="Status"><span class="status status-<?= e($o['status']) ?>"><?= e(status_label($o['status'])) ?></span></td>
-                    <td><a class="btn btn-outline" href="<?= e(url('/pedidos/' . (int) $o['id'])) ?>">Ver detalhes</a></td>
+                    <td class="row-actions">
+                        <a class="btn btn-outline" href="<?= e(url('/pedidos/' . (int) $o['id'])) ?>">Ver detalhes</a>
+                        <?php if (invoice_link($o['invoice_url'] ?? null) !== null): ?>
+                            <a class="btn" href="<?= e(invoice_link($o['invoice_url'])) ?>" target="_blank" rel="noopener noreferrer">Baixar fatura</a>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

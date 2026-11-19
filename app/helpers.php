@@ -43,7 +43,23 @@ function utf8_to_chars(string $s): string
 
 function money_cents(int $cents): string
 {
-    return 'R$ ' . number_format($cents / 100, 2, ',', '.');
+    return number_format($cents / 100, 2, ',', '.') . ' €';
+}
+
+/** Link da fatura só se for https:// válido (nunca javascript: ou outro esquema). */
+function invoice_link(mixed $url): ?string
+{
+    if (!is_string($url) || $url === '' || !str_starts_with(strtolower($url), 'https://')) {
+        return null;
+    }
+    return filter_var($url, FILTER_VALIDATE_URL) !== false ? $url : null;
+}
+
+/** Valor de settings (tabela), com padrão quando não existe. */
+function setting(string $key, ?string $default = null): ?string
+{
+    $value = StoreSettings::all()[$key] ?? null;
+    return $value === null || $value === '' ? $default : (string) $value;
 }
 
 function money(mixed $value): string
@@ -371,6 +387,7 @@ function login_user(array $user): void
     session_regenerate_id(true);
     $_SESSION['user_id'] = (int) $user['id'];
     unset($_SESSION['_csrf']);
+    CartStore::mergeOnLogin((int) $user['id']);
 }
 
 function logout_user(): void
@@ -419,13 +436,44 @@ function take_intended(string $fallback = '/'): string
 
 function cart(): array
 {
-    return clean_items($_SESSION['cart'] ?? []);
+    $out = [];
+    foreach (CartStore::rows() as $id => $row) {
+        $out[$id] = $row['qty'];
+    }
+    return $out;
+}
+
+/** @return array<int,string> [book_id => dedicatória] só das linhas que têm texto */
+function cart_dedications(): array
+{
+    $out = [];
+    foreach (CartStore::rows() as $id => $row) {
+        if ($row['dedication'] !== '') {
+            $out[$id] = $row['dedication'];
+        }
+    }
+    return $out;
 }
 
 /** Item da compra direta ("Comprar agora"), separado do carrinho. */
 function buy_now_items(): array
 {
     return clean_items($_SESSION['buy_now'] ?? []);
+}
+
+/** @return array<int,string> dedicatória da compra direta */
+function buy_now_dedications(): array
+{
+    $raw = $_SESSION['buy_now_dedication'] ?? [];
+    $out = [];
+    if (is_array($raw)) {
+        foreach ($raw as $id => $text) {
+            if (is_int($id) && is_string($text) && $text !== '') {
+                $out[$id] = $text;
+            }
+        }
+    }
+    return $out;
 }
 
 /** @return array<int,int> só pares válidos [book_id => quantidade] */
@@ -443,15 +491,10 @@ function clean_items(mixed $raw): array
     return $clean;
 }
 
-function cart_set(int $bookId, int $qty): void
+/** $dedication null = mantém a atual; '' = apaga. */
+function cart_set(int $bookId, int $qty, ?string $dedication = null): void
 {
-    $cart = cart();
-    if ($qty <= 0) {
-        unset($cart[$bookId]);
-    } else {
-        $cart[$bookId] = $qty;
-    }
-    $_SESSION['cart'] = $cart;
+    CartStore::set($bookId, $qty, $dedication);
 }
 
 function cart_count(): int
@@ -461,19 +504,13 @@ function cart_count(): int
 
 function cart_clear(): void
 {
-    $_SESSION['cart'] = [];
+    CartStore::clear();
 }
 
-function shipping_cents(int $subtotalCents): int
+/** Frete pelo endereço (CEP/estado). Sem endereço, usa a faixa padrão. */
+function shipping_cents(int $subtotalCents, ?string $cep = null, ?string $state = null): int
 {
-    if ($subtotalCents <= 0) {
-        return 0;
-    }
-    $freeFrom = to_cents(config('shop.free_shipping_from', 0));
-    if ($freeFrom > 0 && $subtotalCents >= $freeFrom) {
-        return 0;
-    }
-    return to_cents(config('shop.shipping_flat', 0));
+    return Shipping::quote($subtotalCents, $cep, $state)['shipping_cents'];
 }
 
 /* ---------------------------------------------------------------- views */

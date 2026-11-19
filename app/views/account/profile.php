@@ -26,6 +26,14 @@ $pe = $profile_errors;
                 <input id="p-phone" name="phone" value="<?= e($profile['phone'] ?? '') ?>" inputmode="tel" autocomplete="tel" maxlength="20">
                 <?php if (isset($pe['phone'])): ?><p class="field-error"><?= e($pe['phone']) ?></p><?php endif; ?>
             </div>
+            <?php if (!empty($nifEnabled)): ?>
+            <div class="field">
+                <label for="p-nif">NIF para faturas (opcional)</label>
+                <input id="p-nif" name="nif" value="<?= e($profile['nif'] ?? ($user['nif'] ?? '')) ?>" inputmode="numeric" autocomplete="off" maxlength="14"<?= isset($pe['nif']) ? ' aria-invalid="true" aria-describedby="err-p-nif"' : '' ?>>
+                <p class="hint">9 números. Ele aparece preenchido no checkout.</p>
+                <?php if (isset($pe['nif'])): ?><p class="field-error field-error-lg" id="err-p-nif" role="alert"><?= e($pe['nif']) ?></p><?php endif; ?>
+            </div>
+            <?php endif; ?>
             <button class="btn" type="submit">Salvar dados</button>
         </form>
     </section>

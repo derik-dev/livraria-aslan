@@ -20,7 +20,7 @@ final class BookAdminController
     public function create(): void
     {
         require_admin();
-        $this->form(null, ['title' => '', 'author' => '', 'description' => '', 'price' => '', 'stock' => '0', 'featured' => 0, 'image' => null], []);
+        $this->form(null, ['title' => '', 'author' => '', 'description' => '', 'price' => '', 'stock' => '0', 'featured' => 0, 'allows_dedication' => 0, 'image' => null], []);
     }
 
     public function store(): void
@@ -67,6 +67,7 @@ final class BookAdminController
             'price'       => number_format((float) $book['price'], 2, ',', ''),
             'stock'       => (string) $book['stock'],
             'featured'    => (int) $book['featured'],
+            'allows_dedication' => (int) ($book['allows_dedication'] ?? 0),
             'image'       => $book['image'],
         ], []);
     }
@@ -148,6 +149,7 @@ final class BookAdminController
             'price_cents' => parse_money($priceRaw),
             'stock'       => filter_var($stockRaw, FILTER_VALIDATE_INT),
             'featured'    => ($_POST['featured'] ?? '') === '1' ? 1 : 0,
+            'allows_dedication' => ($_POST['allows_dedication'] ?? '') === '1' ? 1 : 0,
             'image'       => null,
         ];
 
@@ -198,6 +200,7 @@ final class BookAdminController
             'price'       => $data['price_raw'],
             'stock'       => $data['stock_raw'],
             'featured'    => $data['featured'],
+            'allows_dedication' => $data['allows_dedication'],
             'image'       => $image,
         ] + array_intersect_key($data, array_flip(['category_id','isbn','publisher','pages','cost_price','min_stock','active','stock_note']));
     }

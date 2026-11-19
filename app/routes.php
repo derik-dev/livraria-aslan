@@ -54,6 +54,8 @@ $router->get('/admin/pedidos/{id}', [OrderAdminController::class, 'show']);
 $router->post('/admin/pedidos/{id}/status', [OrderAdminController::class, 'updateStatus']);
 $router->post('/admin/pedidos/{id}/dados', [OrderAdminController::class, 'metadata']);
 $router->post('/admin/pedidos/{id}/cancelamento', [OrderAdminController::class, 'cancellation']);
+$router->post('/admin/pedidos/{id}/fatura', [OrderAdminController::class, 'invoice']);
+$router->get('/admin/dedicatorias', [DedicationAdminController::class, 'index']);
 
 $router->get('/admin/clientes', [CustomerAdminController::class, 'index']);
 $router->get('/admin/clientes/{id}', [CustomerAdminController::class, 'show']);

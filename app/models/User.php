@@ -5,7 +5,7 @@ final class User
 {
     public static function find(int $id): ?array
     {
-        $extra = AdminSchema::has('users', 'active') ? ', active, last_login_at' : '';
+        $extra = (AdminSchema::has('users', 'active') ? ', active, last_login_at' : '') . (AdminSchema::has('users', 'nif') ? ', nif' : '');
         return db_one('SELECT id, name, email, phone, role, created_at' . $extra . ' FROM users WHERE id = ?', [$id]);
     }
 
@@ -42,6 +42,14 @@ final class User
     public static function updateProfile(int $id, string $name, string $email, ?string $phone): void
     {
         db_run('UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?', [$name, $email, $phone, $id]);
+    }
+
+    /** NIF do perfil (null = sem NIF). */
+    public static function setNif(int $id, ?string $nif): void
+    {
+        if (AdminSchema::has('users', 'nif')) {
+            db_run('UPDATE users SET nif = ? WHERE id = ?', [$nif, $id]);
+        }
     }
 
     public static function updatePassword(int $id, string $password): void

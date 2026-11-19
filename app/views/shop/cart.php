@@ -28,12 +28,15 @@
                     <td data-label="Livro">
                         <a href="<?= e(url('/livro/' . (int) $b['id'])) ?>"><strong><?= e($b['title']) ?></strong></a><br>
                         <?= e($b['author']) ?>
+                        <?php if ($item['allows_dedication']): ?>
+                            <?= render_template('shop/_dedication_field', ['id' => 'ded-' . (int) $b['id'], 'name' => 'dedication[' . (int) $b['id'] . ']', 'value' => $item['dedication'], 'max' => Dedication::max(), 'form' => 'cart-form']) ?>
+                        <?php endif; ?>
                     </td>
                     <td data-label="Preço"><?= e(money_cents($item['price_cents'])) ?></td>
                     <td data-label="Quantidade">
                         <label class="sr-only" for="qty-<?= (int) $b['id'] ?>">Quantidade de <?= e($b['title']) ?></label>
                         <input class="qty-input" id="qty-<?= (int) $b['id'] ?>" form="cart-form" type="number"
-                               name="qty[<?= (int) $b['id'] ?>]" value="<?= (int) $item['qty'] ?>"
+                               name="qty[<?= (int) $b['id'] ?>]" data-price="<?= (int) $item['price_cents'] ?>" value="<?= (int) $item['qty'] ?>"
                                min="0" max="<?= (int) min((int) $b['stock'], (int) config('shop.max_qty_per_item', 99)) ?>" step="1" inputmode="numeric">
                     </td>
                     <td data-label="Total"><?= e(money_cents($item['line_cents'])) ?></td>
@@ -51,7 +54,7 @@
     </div>
 
     <div class="cart-actions">
-        <button class="btn btn-outline" type="submit" form="cart-form">Atualizar quantidades</button>
+        <button class="btn btn-outline" type="submit" form="cart-form"><?= array_filter(array_column($summary['items'], 'allows_dedication')) ? 'Salvar quantidades e dedicatórias' : 'Atualizar quantidades' ?></button>
         <a href="<?= e(url('/catalogo')) ?>">Continuar comprando</a>
     </div>
 
@@ -61,10 +64,7 @@
             <dt>Frete</dt><dd><?= $summary['shipping_cents'] === 0 ? 'Grátis' : e(money_cents($summary['shipping_cents'])) ?></dd>
             <dt class="total">Total</dt><dd class="total"><?= e(money_cents($summary['total_cents'])) ?></dd>
         </dl>
-        <?php $freeFrom = to_cents(config('shop.free_shipping_from', 0)); ?>
-        <?php if ($freeFrom > 0 && $summary['shipping_cents'] > 0): ?>
-            <p>Faltam <?= e(money_cents($freeFrom - $summary['subtotal_cents'])) ?> para o frete grátis.</p>
-        <?php endif; ?>
+        <?= render_template('shop/_free_shipping_bar', ['summary' => $summary, 'live' => true]) ?>
         <a class="btn btn-block" href="<?= e(url('/checkout')) ?>">Finalizar compra</a>
     </div>
 <?php endif; ?>

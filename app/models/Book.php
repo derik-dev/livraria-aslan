@@ -19,7 +19,8 @@ final class Book
         }
         $marks = implode(',', array_fill(0, count($ids), '?'));
         $active = self::activeFilter();
-        $rows = db_all('SELECT ' . self::COLUMNS . " FROM books WHERE id IN ($marks)$active", $ids);
+        $extra = AdminSchema::has('books', 'allows_dedication') ? ', allows_dedication' : '';
+        $rows = db_all('SELECT ' . self::COLUMNS . $extra . " FROM books WHERE id IN ($marks)$active", $ids);
         $out = [];
         foreach ($rows as $r) {
             $out[(int) $r['id']] = $r;

@@ -89,6 +89,53 @@ final class OrderAdminController
         redirect('/admin/pedidos/'.$id);
     }
 
+    /** Dados da fatura emitida FORA do site (programa certificado). O site só guarda. */
+    public function invoice(int $id): void
+    {
+        require_admin();
+        if (!AdminSchema::has('orders', 'invoice_number')) { render_error(409); return; }
+        $limit = static fn (string $col, int $fallback): int => min($fallback, AdminSchema::column('orders', $col)['length'] ?? $fallback);
+        $number = input('invoice_number', $limit('invoice_number', 60));
+        $rawUrl = trim(is_string($_POST['invoice_url'] ?? null) ? $_POST['invoice_url'] : '');
+        $rawDate = input('invoice_issued_at', 20);
+        $errors = [];
+
+        $url = null;
+        if ($rawUrl !== '') {
+            if (strlen($rawUrl) > $limit('invoice_url', 500) || invoice_link($rawUrl) === null) {
+                $errors[] = 'O link da fatura precisa começar com https:// e ser um endereço válido.';
+            } else {
+                $url = $rawUrl;
+            }
+        }
+        $issuedAt = null;
+        if ($rawDate !== '') {
+            $date = DateTimeImmutable::createFromFormat('!Y-m-d', $rawDate);
+            if (!$date || $date->format('Y-m-d') !== $rawDate) {
+                $errors[] = 'Informe a data de emissão no formato do calendário.';
+            } else {
+                $type = AdminSchema::column('orders', 'invoice_issued_at')['type'] ?? 'datetime';
+                $issuedAt = $type === 'date' ? $date->format('Y-m-d') : $date->format('Y-m-d 00:00:00');
+            }
+        }
+        if (($url !== null || $issuedAt !== null) && $number === '') {
+            $errors[] = 'Informe o número da fatura.';
+        }
+        if ($errors) {
+            flash('error', implode(' ', $errors));
+            redirect('/admin/pedidos/' . $id);
+        }
+        try {
+            AdminAudit::transaction(function () use ($id, $number, $url, $issuedAt): void {
+                if (!db_one('SELECT id FROM orders WHERE id=? FOR UPDATE', [$id])) throw new DomainException('Pedido não encontrado.');
+                Order::setInvoice($id, $number === '' ? null : $number, $url, $issuedAt);
+                AdminAudit::record('fatura', 'orders', $id, ['invoice_number' => $number, 'invoice_url' => $url, 'invoice_issued_at' => $issuedAt]);
+            });
+            flash('success', 'Dados da fatura salvos.' . ($url !== null ? ' O cliente já vê o botão "Baixar fatura".' : ''));
+        } catch (DomainException $e) { flash('error', $e->getMessage()); }
+        redirect('/admin/pedidos/' . $id);
+    }
+
     public function cancellation(int $id): void
     {
         require_admin();

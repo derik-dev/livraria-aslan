@@ -5,6 +5,9 @@ $current = array_search($order['status'], $steps, true);
 <p class="breadcrumb"><a href="<?= e(url('/pedidos')) ?>">Meus pedidos</a> / Pedido nº <?= (int) $order['id'] ?></p>
 <h1>Pedido nº <?= (int) $order['id'] ?></h1>
 <p>Feito em <?= e(format_date($order['created_at'])) ?> &middot; Pagamento: <?= e($paymentLabel) ?></p>
+<?php if (invoice_link($order['invoice_url'] ?? null) !== null): ?>
+    <p><a class="btn" href="<?= e(invoice_link($order['invoice_url'])) ?>" target="_blank" rel="noopener noreferrer">Baixar fatura</a><?php if (!empty($order['invoice_number'])): ?> Fatura nº <?= e($order['invoice_number']) ?><?php endif; ?></p>
+<?php endif; ?>
 
 <?php if ($order['status'] === 'cancelado'): ?>
     <div class="alert alert-error" role="status"><strong>Este pedido foi cancelado.</strong></div>

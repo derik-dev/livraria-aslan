@@ -19,8 +19,10 @@ final class CheckoutController
 
         $address = Address::forUser((int) $user['id']) ?? [];
         $this->render($user, $summary, $address + [
-            'name'  => $user['name'],
-            'phone' => (string) ($user['phone'] ?? ''),
+            'name'         => $user['name'],
+            'phone'        => (string) ($user['phone'] ?? ''),
+            'invoice_name' => $user['name'],
+            'invoice_nif'  => (string) ($user['nif'] ?? ''),
         ], [], array_key_first(Payment::available()) ?? '', $buyNow);
     }
 
@@ -46,9 +48,35 @@ final class CheckoutController
             $errors['payment_method'] = 'Escolha a forma de pagamento.';
         }
 
+        // Fatura com NIF (vazio = consumidor final, a não ser que seja obrigatório).
+        $invoice = ['nif' => '', 'name' => ''];
+        if (Nif::enabled()) {
+            [$invoice['nif'], $nifError] = Nif::read(input('invoice_nif', 30), Nif::required());
+            $invoice['name'] = input('invoice_name', min(150, AdminSchema::column('orders', 'invoice_name')['length'] ?? 150));
+            if ($nifError !== null) {
+                $errors['invoice_nif'] = $nifError;
+            }
+            if ($invoice['nif'] !== '' && text_length($invoice['name']) < 2) {
+                $errors['invoice_name'] = 'Informe o nome que vai na fatura.';
+            }
+        }
+
+        // Frete sempre recalculado aqui, com o endereço enviado.
+        $summary = Cart::withShipping($summary, $address['cep'], $address['state']);
+        $form = $address + ['name' => $name, 'phone' => $phone, 'invoice_name' => $invoice['name'], 'invoice_nif' => $invoice['nif']];
+
         if ($errors) {
             http_response_code(422);
-            $this->render($user, $summary, $address + ['name' => $name, 'phone' => $phone], $errors, $method, $buyNow);
+            $this->render($user, $summary, $form, $errors, $method, $buyNow);
+            return;
+        }
+
+        // O total mudou (outro endereço = outra faixa de frete)? Mostra antes de cobrar.
+        $shown = input_int('shown_total');
+        if ($shown !== null && $shown !== $summary['total_cents']) {
+            http_response_code(422);
+            flash('info', 'O frete foi recalculado para o endereço informado. Novo total: ' . money_cents($summary['total_cents']) . '. Confira e clique em "Confirmar pedido" de novo.');
+            $this->render($user, $summary, $form, [], $method, $buyNow);
             return;
         }
 
@@ -57,7 +85,8 @@ final class CheckoutController
                 (int) $user['id'],
                 $summary['map'],
                 $address + ['name' => $name, 'phone' => $phone],
-                $method
+                $method,
+                ['dedications' => $summary['dedications'], 'invoice' => $invoice]
             );
         } catch (DomainException $e) {
             flash('error', $e->getMessage());
@@ -66,7 +95,7 @@ final class CheckoutController
         }
 
         if ($buyNow) {
-            unset($_SESSION['buy_now']);
+            unset($_SESSION['buy_now'], $_SESSION['buy_now_dedication']);
         } else {
             cart_clear();
         }
@@ -152,6 +181,8 @@ final class CheckoutController
             'method'   => $method,
             'buyNow'   => $buyNow,
             'backTo'   => $buyNow ? $this->buyNowBackTo() : '/carrinho',
+            'invoiceEnabled' => Nif::enabled(),
+            'nifRequired'    => Nif::enabled() && Nif::required(),
         ]);
     }
 }

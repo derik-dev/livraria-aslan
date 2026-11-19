@@ -36,6 +36,17 @@ final class CartController
             redirect($backTo);
         }
 
+        // Dedicatória (opcional): só se o livro permitir e a loja estiver com ela ligada.
+        $dedication = null;
+        if (Dedication::allowed($book)) {
+            [$dedication, $dedError] = Dedication::read($_POST['dedication'] ?? '');
+            if ($dedError !== null) {
+                $_SESSION['_old_dedication'] = ['id' => (int) $book['id'], 'text' => $dedication];
+                flash('error', $dedError);
+                redirect($backTo);
+            }
+        }
+
         // "Comprar agora": vai direto ao checkout só com este livro, sem mexer no carrinho.
         if (input('buy_now', 1) === '1') {
             if ($qty > $stock) {
@@ -47,6 +58,7 @@ final class CartController
                 redirect($backTo);
             }
             $_SESSION['buy_now'] = [(int) $book['id'] => $qty];
+            $_SESSION['buy_now_dedication'] = $dedication ? [(int) $book['id'] => $dedication] : [];
             redirect('/checkout?agora=1');
         }
 
@@ -61,7 +73,8 @@ final class CartController
             redirect($backTo);
         }
 
-        cart_set((int) $book['id'], $wanted);
+        // Dedicatória em branco não apaga a que já estava no carrinho.
+        cart_set((int) $book['id'], $wanted, $dedication === '' ? null : $dedication);
         flash('success', '"' . $book['title'] . '" foi adicionado ao carrinho.');
         redirect('/carrinho');
     }
@@ -77,6 +90,21 @@ final class CartController
         $maxPerItem = (int) config('shop.max_qty_per_item', 99);
         $adjusted = false;
 
+        // Confere todas as dedicatórias antes de gravar qualquer coisa.
+        $postedDed = is_array($_POST['dedication'] ?? null) ? $_POST['dedication'] : [];
+        $dedications = [];
+        foreach ($cart as $id => $oldQty) {
+            if (!array_key_exists($id, $postedDed) || !Dedication::allowed($books[$id] ?? null)) {
+                continue;
+            }
+            [$text, $error] = Dedication::read($postedDed[$id]);
+            if ($error !== null) {
+                flash('error', '"' . $books[$id]['title'] . '": ' . $error . ' Nada foi alterado no carrinho.');
+                redirect('/carrinho');
+            }
+            $dedications[$id] = $text;
+        }
+
         foreach ($cart as $id => $oldQty) {
             if (!array_key_exists($id, $posted)) {
                 continue;
@@ -84,6 +112,9 @@ final class CartController
             $qty = filter_var(is_string($posted[$id]) ? trim($posted[$id]) : '', FILTER_VALIDATE_INT);
             if ($qty === false || $qty < 0) {
                 $adjusted = true;
+                if (isset($dedications[$id])) {
+                    cart_set($id, $oldQty, $dedications[$id]);
+                }
                 continue;
             }
             $stock = isset($books[$id]) ? (int) $books[$id]['stock'] : 0;
@@ -92,7 +123,7 @@ final class CartController
                 $qty = $limit;
                 $adjusted = true;
             }
-            cart_set($id, $qty);
+            cart_set($id, $qty, $dedications[$id] ?? null);
         }
 
         flash($adjusted ? 'info' : 'success', $adjusted

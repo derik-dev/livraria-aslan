@@ -18,6 +18,8 @@ final class AccountController
         $name = input('name', 100);
         $email = strtolower(input('email', 190));
         $phone = only_digits(input('phone', 20));
+        $nifEnabled = AdminSchema::has('users', 'nif');
+        [$nif, $nifError] = $nifEnabled ? Nif::read(input('nif', 30), false) : ['', null];
 
         $errors = [];
         if (text_length($name) < 3) {
@@ -31,11 +33,14 @@ final class AccountController
         if ($phone !== '' && (strlen($phone) < 10 || strlen($phone) > 11)) {
             $errors['phone'] = 'Informe o telefone com DDD (10 ou 11 números).';
         }
+        if ($nifError !== null) {
+            $errors['nif'] = $nifError;
+        }
 
         if ($errors) {
             http_response_code(422);
             $this->renderProfile($user, [
-                'profile'        => ['name' => $name, 'email' => $email, 'phone' => $phone],
+                'profile'        => ['name' => $name, 'email' => $email, 'phone' => $phone, 'nif' => $nif],
                 'address'        => Address::forUser((int) $user['id']) ?? [],
                 'profile_errors' => $errors,
             ]);
@@ -43,6 +48,9 @@ final class AccountController
         }
 
         User::updateProfile((int) $user['id'], $name, $email, $phone === '' ? null : $phone);
+        if ($nifEnabled) {
+            User::setNif((int) $user['id'], $nif === '' ? null : $nif);
+        }
         flash('success', 'Seus dados foram salvos.');
         redirect('/perfil');
     }
@@ -128,6 +136,7 @@ final class AccountController
             'profile_errors' => [],
             'address_errors' => [],
             'password_error' => null,
+            'nifEnabled'     => AdminSchema::has('users', 'nif'),
         ]);
     }
 }

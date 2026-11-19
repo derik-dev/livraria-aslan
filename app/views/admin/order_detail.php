@@ -38,6 +38,26 @@
     </section>
 </div>
 
+<?php if (array_key_exists('invoice_number', $order)):
+    $issued = !empty($order['invoice_issued_at']) ? substr((string) $order['invoice_issued_at'], 0, 10) : ''; ?>
+<section class="section card">
+    <h2>Fatura</h2>
+    <p><strong>Nome na fatura:</strong> <?= e($order['invoice_name'] ?? '') ?: 'não informado' ?><br>
+        <strong>NIF:</strong> <?= !empty($order['invoice_nif']) ? e($order['invoice_nif']) : 'consumidor final (sem NIF)' ?></p>
+    <p>Emita a fatura no seu programa de faturação certificado e registe aqui o número e o link. O site não emite fatura oficial.</p>
+    <form method="post" class="form-stack" action="<?= e(url('/admin/pedidos/' . (int) $order['id'] . '/fatura')) ?>">
+        <?= csrf_field() ?>
+        <div class="form-grid">
+            <div class="field"><label for="invoice_number">Número da fatura</label><input id="invoice_number" name="invoice_number" value="<?= e($order['invoice_number'] ?? '') ?>" maxlength="60"></div>
+            <div class="field"><label for="invoice_issued_at">Data de emissão</label><input id="invoice_issued_at" name="invoice_issued_at" type="date" value="<?= e($issued) ?>"></div>
+            <div class="field field-wide"><label for="invoice_url">Link do PDF da fatura (https://)</label><input id="invoice_url" name="invoice_url" type="url" value="<?= e($order['invoice_url'] ?? '') ?>" maxlength="500" placeholder="https://"></div>
+        </div>
+        <button class="btn">Salvar dados da fatura</button>
+    </form>
+    <?php if (invoice_link($order['invoice_url'] ?? null) !== null): ?><p><a href="<?= e(invoice_link($order['invoice_url'])) ?>" target="_blank" rel="noopener noreferrer">Abrir a fatura salva</a></p><?php endif; ?>
+</section>
+<?php endif; ?>
+
 <section class="section">
     <h2>Itens</h2>
     <?= render_template('shop/_order_summary', ['order' => $order, 'items' => $items]) ?>

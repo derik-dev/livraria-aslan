@@ -29,6 +29,9 @@ $stock = (int) $book['stock'];
                     <label for="qty">Quantidade</label>
                     <input id="qty" type="number" name="qty" value="1" min="1" max="<?= (int) $maxQty ?>" step="1" inputmode="numeric" required>
                 </div>
+                <?php if (!empty($allowsDedication)): ?>
+                    <?= render_template('shop/_dedication_field', ['id' => 'dedication', 'name' => 'dedication', 'value' => $dedication ?? '', 'max' => $dedicationMax, 'form' => null]) ?>
+                <?php endif; ?>
                 <div class="buy-buttons">
                     <button class="btn" type="submit" name="buy_now" value="1">Comprar agora</button>
                     <button class="btn btn-outline" type="submit" name="buy_now" value="0">Adicionar ao carrinho</button>

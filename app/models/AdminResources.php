@@ -12,7 +12,7 @@ final class AdminResources
                 'fields' => [
                     'name' => ['Nome da faixa', 'text', true, 80], 'state' => ['Estado (vazio = todos)', 'select', false, ['' => 'Todos os estados'] + array_combine(BR_STATES, BR_STATES)],
                     'cep_start' => ['CEP inicial (opcional)', 'cep', false, 9], 'cep_end' => ['CEP final (opcional)', 'cep', false, 9],
-                    'price' => ['Preço em reais', 'money', true], 'free_above' => ['Frete grátis a partir de (R$, vazio = sem regra)', 'money', false],
+                    'price' => ['Preço em euros', 'money', true], 'free_above' => ['Frete grátis a partir de (€, vazio = usa a configuração da loja)', 'money', false],
                     'days_min' => ['Prazo mínimo em dias úteis', 'integer', true, 255], 'days_max' => ['Prazo máximo em dias úteis', 'integer', true, 255],
                     'active' => ['Ativa', 'checkbox'],
                 ], 'delete' => true],
@@ -35,7 +35,7 @@ final class AdminResources
             'cupons' => ['table' => 'coupons', 'title' => 'Cupons', 'search' => ['code'],
                 'columns' => ['code' => 'Código', 'type' => 'Tipo', 'value' => 'Valor', 'used_count' => 'Usos', 'expires_at' => 'Validade', 'active' => 'Ativo'],
                 'fields' => [
-                    'code' => ['Código', 'code', true, 30], 'type' => ['Tipo', 'select', true, ['percent' => 'Porcentagem (%)', 'fixed' => 'Valor em reais']],
+                    'code' => ['Código', 'code', true, 30], 'type' => ['Tipo', 'select', true, ['percent' => 'Porcentagem (%)', 'fixed' => 'Valor em euros']],
                     'value' => ['Desconto', 'money', true], 'min_order' => ['Compra mínima (R$)', 'money', true],
                     'max_uses' => ['Limite total de usos (vazio = sem limite)', 'integer', false, 100000000],
                     'starts_at' => ['Início', 'datetime', false], 'expires_at' => ['Fim', 'datetime', false],

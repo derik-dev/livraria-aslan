@@ -33,7 +33,11 @@ final class PanelAdminController
             'store_phone' => ['Telefone','text',false,20], 'store_whatsapp' => ['WhatsApp com DDD','text',false,20],
             'pix_key' => ['Chave Pix','text',false,255], 'pix_holder' => ['Titular do Pix','text',false,150],
             'pix_expires_minutes' => ['Prazo do Pix em minutos','integer',true,10080],
-            'shipping_fixed' => ['Frete fixo em reais','money',true], 'free_shipping_min' => ['Frete grátis a partir de (R$, 0 desativa)','money',true],
+            'shipping_fixed' => ['Frete fixo em euros (usado quando não há faixa em Frete)','money',true], 'free_shipping_min' => ['Frete grátis a partir de (€, 0 desativa; vale quando a faixa não tem valor próprio)','money',true],
+            'free_shipping_bar_enabled' => ['Mostrar a barra "Faltam X € para frete grátis" no carrinho','checkbox'],
+            'dedication_enabled' => ['Permitir dedicatória nos livros marcados','checkbox'],
+            'dedication_max_chars' => ['Limite de caracteres da dedicatória','integer',true, Dedication::columnLimit()],
+            'invoice_nif_required' => ['NIF obrigatório no checkout','checkbox'],
             'return_window_days' => ['Prazo para devolução em dias','integer',true,365],
             'cart_abandoned_hours' => ['Carrinho abandonado após quantas horas','integer',true,8760],
             'reviews_need_approval' => ['Avaliações precisam de aprovação','checkbox'],
@@ -45,11 +49,12 @@ final class PanelAdminController
         require_admin();
         if (!AdminSchema::has('settings')) { view('admin/setup', ['title' => 'Configurações'], 'admin'); return; }
         $fields = self::settingsFields(); $values = StoreSettings::all(); $errors = [];
-        $values += ['pix_expires_minutes' => '60', 'return_window_days' => '7', 'cart_abandoned_hours' => '24', 'reviews_need_approval' => '1'];
+        $values += ['pix_expires_minutes' => '60', 'return_window_days' => '7', 'cart_abandoned_hours' => '24', 'reviews_need_approval' => '1',
+            'free_shipping_bar_enabled' => '0', 'dedication_enabled' => '0', 'dedication_max_chars' => '200', 'invoice_nif_required' => '0'];
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             [$clean, $errors] = AdminResources::validate(['fields' => $fields], $_POST);
             if (!valid_email((string) $clean['store_email'])) $errors['store_email'] = 'Informe um e-mail válido.';
-            foreach (['pix_expires_minutes','cart_abandoned_hours'] as $key) if ((int) $clean[$key] < 1) $errors[$key] = 'Informe pelo menos 1.';
+            foreach (['pix_expires_minutes','cart_abandoned_hours','dedication_max_chars'] as $key) if ((int) $clean[$key] < 1) $errors[$key] = 'Informe pelo menos 1.';
             if (!$errors) {
                 AdminAudit::transaction(function () use ($clean): void {
                     foreach ($clean as $key => $value) db_run('INSERT INTO settings(setting_key,setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)', [$key, $value]);

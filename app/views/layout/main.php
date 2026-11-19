@@ -2,7 +2,14 @@
 /** @var string $content */
 $pageTitle = isset($title) && $title !== '' ? $title . ' | ' . config('app_name') : config('app_name');
 $me = current_user();
-$cartCount = cart_count();
+// O topo nunca pode derrubar a página (ex.: página de erro com o banco fora do ar).
+try {
+    $mini = Cart::peek();
+    $cartCount = array_sum($mini['map']);
+} catch (Throwable $e) {
+    $mini = null;
+    $cartCount = 0;
+}
 $flashes = take_flashes();
 ?>
 <!doctype html>
@@ -23,7 +30,7 @@ $flashes = take_flashes();
         <a class="logo" href="<?= e(url('/')) ?>"><?= e(config('app_name')) ?></a>
         <nav class="main-nav" aria-label="Menu principal">
             <a href="<?= e(url('/catalogo')) ?>">Catálogo</a>
-            <a href="<?= e(url('/carrinho')) ?>">Carrinho (<?= $cartCount ?>)</a>
+            <?= render_template('shop/_mini_cart', ['mini' => $mini, 'count' => $cartCount]) ?>
             <?php if ($me !== null): ?>
                 <a href="<?= e(url('/pedidos')) ?>">Meus pedidos</a>
                 <a href="<?= e(url('/perfil')) ?>">Perfil</a>
@@ -54,7 +61,7 @@ $flashes = take_flashes();
 <footer class="site-footer">
     <div class="container">
         <p><?= e(config('app_name')) ?> &middot; <?= date('Y') ?></p>
-        <p>Pagamento por Pix. Dúvidas sobre um pedido? Veja em <a href="<?= e(url('/pedidos')) ?>">Meus pedidos</a>.</p>
+        <p>Preços em euro (€). Pagamento por Pix. Dúvidas sobre um pedido? Veja em <a href="<?= e(url('/pedidos')) ?>">Meus pedidos</a>.</p>
     </div>
 </footer>
 <script src="<?= e(asset('assets/js/app.js')) ?>"></script>
