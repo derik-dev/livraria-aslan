@@ -52,7 +52,7 @@ final class AdminWorkflows
                 AdminPayments::change($paymentId,'estornar','Devolução nº ' . $id . ': ' . $note,$refund);
             }
             if ($request['status'] === 'concluida' && $refund !== null && $refund !== to_cents($request['refund_amount'] ?? 0)) throw new DomainException('O reembolso desta solicitação já foi registrado.');
-            db_run('UPDATE `returns` SET status=?,admin_note=?,refund_amount=?,resolved_at=CASE WHEN ? IN (\'concluida\',\'recusada\') THEN COALESCE(resolved_at,NOW()) ELSE resolved_at END WHERE id=?',[$status,$note,$refund === null ? $request['refund_amount'] : cents_to_decimal($refund),$status,$id]);
+            db_run('UPDATE `returns` SET status=?,admin_note=?,refund_amount=?,resolved_at=CASE WHEN ?=1 THEN COALESCE(resolved_at,NOW()) ELSE resolved_at END WHERE id=?',[$status,$note,$refund === null ? $request['refund_amount'] : cents_to_decimal($refund),in_array($status,['concluida','recusada'],true) ? 1 : 0,$id]);
             AdminAudit::record('atualizar','returns',$id,['old'=>$request['status'],'new'=>$status,'restock'=>$restock,'refund_cents'=>$refund]);
         });
     }

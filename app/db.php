@@ -22,6 +22,8 @@ function db(): PDO
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
     ]);
+    // Mesma collation das tabelas: evita "Illegal mix of collations" ao comparar parâmetros com textos fixos.
+    $pdo->exec('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
     // Mantém NOW()/CURRENT_TIMESTAMP no mesmo fuso do PHP.
     $pdo->exec("SET time_zone = '" . date('P') . "'");
 
