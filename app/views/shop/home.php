@@ -22,3 +22,17 @@
         </div>
     <?php endif; ?>
 </section>
+
+<?php if (!empty($latest)): ?>
+<section class="section">
+    <div class="section-head">
+        <h2>Novidades</h2>
+        <a href="<?= e(url('/catalogo')) ?>">Ver todos os livros</a>
+    </div>
+    <div class="book-grid">
+        <?php foreach ($latest as $book): ?>
+            <?= render_template('shop/_book_card', ['book' => $book]) ?>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>

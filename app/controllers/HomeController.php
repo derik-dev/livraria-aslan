@@ -5,9 +5,11 @@ final class HomeController
 {
     public function index(): void
     {
+        $featured = Book::featured(6);
         view('shop/home', [
-            'title' => 'Início',
-            'books' => Book::featured(6),
+            'title'  => 'Início',
+            'books'  => $featured,
+            'latest' => Book::latest(6, array_column($featured, 'id')),
         ]);
     }
 

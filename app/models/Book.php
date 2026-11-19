@@ -38,6 +38,14 @@ final class Book
         return $rows;
     }
 
+    /** Últimos livros cadastrados (para a seção "Novidades" da home), sem repetir os já mostrados. */
+    public static function latest(int $limit = 6, array $exceptIds = []): array
+    {
+        $exceptIds = array_values(array_filter(array_map('intval', $exceptIds), static fn (int $i): bool => $i > 0));
+        $not = $exceptIds ? ' AND id NOT IN (' . implode(',', array_fill(0, count($exceptIds), '?')) . ')' : '';
+        return db_all('SELECT ' . self::COLUMNS . ' FROM books WHERE 1=1' . self::activeFilter() . $not . ' ORDER BY created_at DESC, id DESC LIMIT ?', [...$exceptIds, $limit]);
+    }
+
     /** Quebra a busca em palavras (máx. 5). "farol  vidro" => ["farol", "vidro"]. */
     private static function terms(string $q): array
     {
