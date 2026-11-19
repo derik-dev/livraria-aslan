@@ -7,8 +7,6 @@ final class AdminWorkflows
     {
         return [
             'pagamentos' => ['title'=>'Pagamentos','table'=>'payments','states'=>['pendente','aprovado','recusado','estornado','expirado','cancelado']],
-            'avaliacoes' => ['title'=>'Avaliações','table'=>'reviews','states'=>['pendente','aprovado','rejeitado']],
-            'mensagens' => ['title'=>'Mensagens','table'=>'contact_messages','states'=>['nova','lida','respondida','arquivada']],
             'devolucoes' => ['title'=>'Devoluções e trocas','table'=>'returns','states'=>['solicitada','aprovada','recusada','recebida','concluida']],
         ];
     }

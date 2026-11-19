@@ -16,16 +16,6 @@ final class AdminResources
                     'days_min' => ['Prazo mínimo em dias úteis', 'integer', true, 255], 'days_max' => ['Prazo máximo em dias úteis', 'integer', true, 255],
                     'active' => ['Ativa', 'checkbox'],
                 ], 'delete' => true],
-            'banners' => ['table' => 'banners', 'title' => 'Banners', 'search' => ['title', 'subtitle'],
-                'columns' => ['title' => 'Título', 'position' => 'Posição', 'sort_order' => 'Ordem', 'starts_at' => 'Início', 'ends_at' => 'Fim', 'active' => 'Ativo'],
-                'fields' => [
-                    'title' => ['Título', 'text', true, 150], 'subtitle' => ['Subtítulo', 'text', false, 255],
-                    'link_url' => ['Link (ex.: /catalogo)', 'link', false, 255], 'button_text' => ['Texto do botão', 'text', false, 40],
-                    'position' => ['Posição na página inicial', 'select', true, ['home_topo' => 'Topo', 'home_meio' => 'Meio', 'home_rodape' => 'Rodapé']],
-                    'sort_order' => ['Ordem de exibição (menor primeiro)', 'integer', true, 100000],
-                    'starts_at' => ['Início da exibição', 'datetime', false], 'ends_at' => ['Fim da exibição', 'datetime', false],
-                    'active' => ['Ativo', 'checkbox'],
-                ], 'delete' => true, 'image' => true],
             'categorias' => ['table' => 'categories', 'title' => 'Categorias', 'search' => ['name', 'slug'],
                 'columns' => ['name' => 'Nome', 'slug' => 'Endereço', 'active' => 'Ativa'],
                 'fields' => [

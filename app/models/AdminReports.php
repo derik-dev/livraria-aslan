@@ -28,7 +28,7 @@ final class AdminReports
     public static function attention(): array
     {
         $items = [];
-        foreach ([['reviews','pendente','Avaliações a aprovar','avaliacoes'],['contact_messages','nova','Mensagens novas','mensagens'],['returns','solicitada','Devoluções solicitadas','devolucoes']] as [$table,$status,$label,$path]) {
+        foreach ([['returns','solicitada','Devoluções solicitadas','devolucoes']] as [$table,$status,$label,$path]) {
             if (AdminSchema::has($table)) $items[] = ['label' => $label, 'count' => (int) db_value("SELECT COUNT(*) FROM `$table` WHERE status=?", [$status]), 'path' => '/admin/' . $path . '?status=' . $status];
         }
         if (AdminSchema::has('orders','cancel_requested_at')) $items[] = ['label' => 'Pedidos de cancelamento', 'count' => (int) db_value("SELECT COUNT(*) FROM orders WHERE cancel_requested_at IS NOT NULL AND status NOT IN ('cancelado','entregue')"), 'path' => '/admin/pedidos?cancelamento=1'];

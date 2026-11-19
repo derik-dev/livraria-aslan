@@ -37,7 +37,7 @@ $flashes = take_flashes();
 </header>
 <?php if ($isAdmin): ?>
 <nav class="container admin-menu" aria-label="Áreas do painel">
-<?php foreach (['' => 'Resumo', 'livros' => 'Livros', 'categorias' => 'Categorias', 'estoque' => 'Estoque', 'pedidos' => 'Pedidos', 'dedicatorias' => 'Dedicatórias', 'pagamentos' => 'Pagamentos', 'frete' => 'Frete', 'cupons' => 'Cupons', 'clientes' => 'Clientes', 'avaliacoes' => 'Avaliações', 'mensagens' => 'Mensagens', 'devolucoes' => 'Devoluções e trocas', 'banners' => 'Banners', 'configuracoes' => 'Configurações', 'seguranca' => 'Segurança'] as $area => $label):
+<?php foreach (['' => 'Resumo', 'livros' => 'Livros', 'categorias' => 'Categorias', 'estoque' => 'Estoque', 'pedidos' => 'Pedidos', 'dedicatorias' => 'Dedicatórias', 'pagamentos' => 'Pagamentos', 'frete' => 'Frete', 'cupons' => 'Cupons', 'clientes' => 'Clientes', 'devolucoes' => 'Devoluções e trocas', 'configuracoes' => 'Configurações', 'seguranca' => 'Segurança'] as $area => $label):
     $path = '/admin' . ($area === '' ? '' : '/' . $area);
     $active = $area === '' ? request_path() === $path : (request_path() === $path || str_starts_with(request_path(), $path . '/'));
 ?><a href="<?= e(url($path)) ?>"<?= $active ? ' aria-current="page"' : '' ?>><?= e($label) ?></a><?php endforeach; ?>
