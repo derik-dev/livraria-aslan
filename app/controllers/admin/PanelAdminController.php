@@ -38,7 +38,7 @@ final class PanelAdminController
             'dedication_enabled' => ['Permitir dedicatória nos livros marcados','checkbox'],
             'dedication_max_chars' => ['Limite de caracteres da dedicatória','integer',true, Dedication::columnLimit()],
             'invoice_nif_required' => ['NIF obrigatório no checkout','checkbox'],
-            'return_window_days' => ['Prazo para devolução em dias','integer',true,365],
+            'return_window_days' => ['Prazo para devolução ou troca, em dias após a entrega','integer',true,365],
             'cart_abandoned_hours' => ['Carrinho abandonado após quantas horas','integer',true,8760],
             'reviews_need_approval' => ['Avaliações precisam de aprovação','checkbox'],
         ];

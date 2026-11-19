@@ -35,6 +35,7 @@ $router->post('/perfil/endereco', [AccountController::class, 'updateAddress']);
 $router->post('/perfil/senha', [AccountController::class, 'updatePassword']);
 $router->get('/pedidos', [AccountController::class, 'orders']);
 $router->get('/pedidos/{id}', [AccountController::class, 'orderShow']);
+$router->post('/pedidos/{id}/devolucao', [AccountController::class, 'requestReturn']);
 
 // Admin
 $router->get('/admin', [DashboardController::class, 'index']);

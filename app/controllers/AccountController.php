@@ -125,7 +125,36 @@ final class AccountController
             'items'        => Order::items($id),
             'instructions' => ($gateway !== null && $order['status'] === 'pendente') ? $gateway->instructions($order) : null,
             'paymentLabel' => $gateway !== null ? $gateway->label() : (string) $order['payment_method'],
+            'returns'      => CustomerReturn::enabled() ? [
+                'check'    => CustomerReturn::eligibility($order),
+                'items'    => CustomerReturn::items($id),
+                'requests' => CustomerReturn::forOrder($id, (int) $user['id']),
+            ] : null,
         ]);
+    }
+
+    public function requestReturn(int $id): void
+    {
+        $user = require_login();
+        if (!CustomerReturn::enabled()) {
+            render_error(404);
+            return;
+        }
+        $posted = is_array($_POST['qty'] ?? null) ? $_POST['qty'] : [];
+        $quantities = [];
+        foreach ($posted as $itemId => $qty) {
+            $n = filter_var(is_string($qty) ? trim($qty) : '', FILTER_VALIDATE_INT);
+            if (is_int($itemId) && $n !== false && $n > 0) {
+                $quantities[$itemId] = $n;
+            }
+        }
+        try {
+            CustomerReturn::create($id, (int) $user['id'], input('type', 20), input('reason', 20), input('description', 2000), $quantities);
+            flash('success', 'Pedido de devolução/troca enviado. A loja vai analisar e você acompanha aqui.');
+        } catch (DomainException $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect('/pedidos/' . $id . '#devolucao');
     }
 
     private function renderProfile(array $user, array $data): void

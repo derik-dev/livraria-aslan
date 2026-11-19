@@ -342,3 +342,4 @@ th { background: #000; color: #fff; font-weight: 600; }
     a { text-decoration: none; }
 }
 .error-list { margin: 8px 0 0; padding-left: 24px; } .error-list li { margin: 4px 0; } .alert-error .error-list a { color: #000; }
+.return-request { border: 2px solid #000; padding: 16px; margin: 0 0 16px; } .return-items { border: 0; padding: 0; margin: 0; } .return-items legend, .radio-list legend { font-weight: 700; margin-bottom: 8px; }
