@@ -16,9 +16,9 @@ return [
     'db' => [
         'host'    => 'localhost',
         'port'    => 3306,
-        'name'    => 'u000000000_livraria',
-        'user'    => 'u000000000_livraria',
-        'pass'    => 'TROQUE_A_SENHA',
+        'name'    => 'u207028478_livraria',
+        'user'    => 'u207028478_editora_aslan',
+        'pass'    => '$@Eu162030$',
         'charset' => 'utf8mb4',
     ],
 
