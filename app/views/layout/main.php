@@ -34,9 +34,6 @@ $flashes = take_flashes();
             <?php if ($me !== null): ?>
                 <a href="<?= e(url('/pedidos')) ?>">Meus pedidos</a>
                 <a href="<?= e(url('/perfil')) ?>">Perfil</a>
-                <?php if ($me['role'] === 'admin'): ?>
-                    <a href="<?= e(url('/admin')) ?>">Painel</a>
-                <?php endif; ?>
                 <form method="post" action="<?= e(url('/logout')) ?>" class="inline-form">
                     <?= csrf_field() ?>
                     <button type="submit" class="nav-button">Sair</button>
