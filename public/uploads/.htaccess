@@ -1,0 +1,5 @@
+# Pasta de imagens enviadas pelo admin: bloqueia qualquer coisa que não seja imagem.
+Options -Indexes
+<FilesMatch "\.(?i:php\d?|phtml|phar|pl|py|cgi|sh|html?|svg|js)$">
+    Require all denied
+</FilesMatch>

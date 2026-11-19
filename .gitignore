@@ -1,0 +1,16 @@
+# app/config.php É versionado de propósito (repositório privado).
+
+# Imagens enviadas pelo painel ficam só no servidor
+public/uploads/*
+!public/uploads/.htaccess
+!public/uploads/.gitkeep
+
+# Logs
+storage/logs/*
+!storage/logs/.gitkeep
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,16 @@
+# Hostinger: o projeto inteiro fica dentro do public_html.
+# Tudo é redirecionado (internamente) para a pasta public/.
+# Assim app/, database/, storage/ e .git nunca ficam acessíveis pelo navegador.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Para forçar HTTPS, tire o # das duas linhas abaixo depois de ativar o SSL no hPanel.
+    # RewriteCond %{HTTPS} !=on
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    RewriteRule ^$ public/ [L]
+    RewriteRule ^((?!public/).*)$ public/$1 [L,NC]
+</IfModule>

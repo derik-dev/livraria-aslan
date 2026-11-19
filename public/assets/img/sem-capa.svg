@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450">
+  <rect width="300" height="450" fill="#000"/>
+  <rect x="16" y="16" width="268" height="418" fill="none" stroke="#fff" stroke-width="3"/>
+  
+  <text x="150" y="250" fill="#fff" font-family="Poppins, Arial, sans-serif" font-size="26" font-weight="700" text-anchor="middle">Sem</text>
+  <text x="150" y="284" fill="#fff" font-family="Poppins, Arial, sans-serif" font-size="26" font-weight="700" text-anchor="middle">capa</text>
+  <line x1="100" y1="310" x2="200" y2="310" stroke="#fff" stroke-width="3"/>
+  <text x="150" y="400" fill="#fff" font-family="Poppins, Arial, sans-serif" font-size="17" text-anchor="middle"></text>
+</svg>
