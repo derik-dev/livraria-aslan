@@ -1,15 +1,9 @@
 <?php
-/** @var string $q @var array $books @var int $total @var int $page @var int $pages */
+/** @var string $q @var array $books @var array $related @var int $total @var int $page @var int $pages */
 ?>
 <h1>Catálogo</h1>
 
-<form class="search-form" method="get" action="<?= e(url('/catalogo')) ?>" role="search">
-    <label for="busca">Buscar por título ou autor</label>
-    <div class="search-row">
-        <input id="busca" type="search" name="q" value="<?= e($q) ?>" maxlength="100" autocomplete="off">
-        <button class="btn" type="submit">Buscar</button>
-    </div>
-</form>
+<?= render_template('shop/_search_form', ['q' => $q, 'id' => 'busca', 'label' => 'Buscar por título, autor ou assunto']) ?>
 
 <?php if ($q !== ''): ?>
     <p class="result-info">
@@ -21,7 +15,7 @@
 <?php if (!$books): ?>
     <div class="empty">
         <?php if ($q !== ''): ?>
-            <p>Nenhum livro com "<?= e($q) ?>" no título ou no autor.</p>
+            <p>Nenhum livro com "<?= e($q) ?>" no título, no autor ou na descrição.</p>
             <p>Confira a grafia ou tente só uma parte do nome.</p>
             <a class="btn" href="<?= e(url('/catalogo')) ?>">Ver todos os livros</a>
         <?php else: ?>
@@ -46,4 +40,15 @@
             <?php endif; ?>
         </nav>
     <?php endif; ?>
+<?php endif; ?>
+
+<?php if ($related): ?>
+    <section class="section">
+        <h2><?= $books ? 'Livros relacionados' : 'Talvez você goste' ?></h2>
+        <div class="book-grid">
+            <?php foreach ($related as $book): ?>
+                <?= render_template('shop/_book_card', ['book' => $book]) ?>
+            <?php endforeach; ?>
+        </div>
+    </section>
 <?php endif; ?>

@@ -2,13 +2,7 @@
 <section class="hero">
     <h1>Livros para ler devagar</h1>
     <p>Encontre seu próximo livro pelo título ou pelo autor.</p>
-    <form class="search-form" method="get" action="<?= e(url('/catalogo')) ?>" role="search">
-        <label for="busca-home">Buscar livro</label>
-        <div class="search-row">
-            <input id="busca-home" type="search" name="q" maxlength="100" autocomplete="off">
-            <button class="btn" type="submit">Buscar</button>
-        </div>
-    </form>
+    <?= render_template('shop/_search_form', ['q' => '', 'id' => 'busca-home', 'label' => 'Buscar livro']) ?>
 </section>
 
 <section class="section">

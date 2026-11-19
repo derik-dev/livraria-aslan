@@ -14,7 +14,7 @@ $flashes = take_flashes();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= e(url('assets/css/style.css')) ?>">
+    <link rel="stylesheet" href="<?= e(asset('assets/css/style.css')) ?>">
 </head>
 <body>
 <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -57,6 +57,6 @@ $flashes = take_flashes();
         <p>Pagamento por Pix. Dúvidas sobre um pedido? Veja em <a href="<?= e(url('/pedidos')) ?>">Meus pedidos</a>.</p>
     </div>
 </footer>
-<script src="<?= e(url('assets/js/app.js')) ?>"></script>
+<script src="<?= e(asset('assets/js/app.js')) ?>"></script>
 </body>
 </html>

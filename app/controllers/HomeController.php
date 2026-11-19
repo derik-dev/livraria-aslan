@@ -20,13 +20,16 @@ final class HomeController
         $page = input_int('pagina', $_GET) ?? 1;
         $page = min(max(1, $page), $pages);
 
+        $books = Book::search($q, $perPage, ($page - 1) * $perPage);
+
         view('shop/catalog', [
-            'title' => $q === '' ? 'Catálogo' : 'Busca: ' . $q,
-            'q'     => $q,
-            'books' => Book::search($q, $perPage, ($page - 1) * $perPage),
-            'total' => $total,
-            'page'  => $page,
-            'pages' => $pages,
+            'title'   => $q === '' ? 'Catálogo' : 'Busca: ' . $q,
+            'q'       => $q,
+            'books'   => $books,
+            'related' => $q === '' ? [] : Book::related($books, 4),
+            'total'   => $total,
+            'page'    => $page,
+            'pages'   => $pages,
         ]);
     }
 

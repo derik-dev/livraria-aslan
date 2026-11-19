@@ -7,6 +7,7 @@ declare(strict_types=1);
 $router->get('/', [HomeController::class, 'index']);
 $router->get('/catalogo', [HomeController::class, 'catalog']);
 $router->get('/livro/{id}', [HomeController::class, 'show']);
+$router->get('/api/busca', [SearchController::class, 'suggest']);
 
 // Carrinho e checkout
 $router->get('/carrinho', [CartController::class, 'index']);

@@ -35,21 +35,76 @@ final class Book
         return $rows;
     }
 
+    /** Quebra a busca em palavras (máx. 5). "farol  vidro" => ["farol", "vidro"]. */
+    private static function terms(string $q): array
+    {
+        $parts = preg_split('/\s+/u', trim($q)) ?: [];
+        return array_slice(array_values(array_filter($parts, static fn (string $t): bool => $t !== '')), 0, 5);
+    }
+
+    /**
+     * Cada palavra precisa aparecer no título, no autor ou na descrição.
+     * A collation utf8mb4_unicode_ci já ignora acentos e maiúsculas.
+     */
     private static function searchWhere(string $q): array
     {
-        if ($q === '') {
+        $terms = self::terms($q);
+        if (!$terms) {
             return ['', []];
         }
-        $like = '%' . like_escape($q) . '%';
-        return [" WHERE (title LIKE ? ESCAPE '!' OR author LIKE ? ESCAPE '!')", [$like, $like]];
+        $clauses = [];
+        $params = [];
+        foreach ($terms as $t) {
+            $like = '%' . like_escape($t) . '%';
+            $clauses[] = "(title LIKE ? ESCAPE '!' OR author LIKE ? ESCAPE '!' OR description LIKE ? ESCAPE '!')";
+            array_push($params, $like, $like, $like);
+        }
+        return [' WHERE ' . implode(' AND ', $clauses), $params];
+    }
+
+    /** Ordena por relevância: título começa com a busca > título contém > autor contém > só descrição. */
+    private static function relevanceOrder(string $q): array
+    {
+        $q = trim((string) preg_replace('/\s+/u', ' ', $q));
+        if ($q === '') {
+            return [' ORDER BY title ASC, id ASC', []];
+        }
+        $e = like_escape($q);
+        return [
+            " ORDER BY CASE
+                WHEN title LIKE ? ESCAPE '!' THEN 0
+                WHEN title LIKE ? ESCAPE '!' THEN 1
+                WHEN author LIKE ? ESCAPE '!' THEN 2
+                ELSE 3 END, title ASC, id ASC",
+            [$e . '%', '%' . $e . '%', '%' . $e . '%'],
+        ];
     }
 
     public static function search(string $q, int $limit, int $offset): array
     {
         [$where, $params] = self::searchWhere($q);
-        $params[] = $limit;
-        $params[] = $offset;
-        return db_all('SELECT ' . self::COLUMNS . " FROM books{$where} ORDER BY title ASC, id ASC LIMIT ? OFFSET ?", $params);
+        [$order, $orderParams] = self::relevanceOrder($q);
+        $params = array_merge($params, $orderParams, [$limit, $offset]);
+        return db_all('SELECT ' . self::COLUMNS . " FROM books{$where}{$order} LIMIT ? OFFSET ?", $params);
+    }
+
+    /**
+     * Livros relacionados aos resultados: primeiro os dos mesmos autores,
+     * depois destaques e mais recentes. Nunca repete os livros já mostrados.
+     */
+    public static function related(array $shown, int $limit = 4): array
+    {
+        $ids = array_map(static fn (array $b): int => (int) $b['id'], $shown) ?: [0];
+        $authors = array_values(array_unique(array_map(static fn (array $b): string => (string) $b['author'], $shown))) ?: [''];
+        $idMarks = implode(',', array_fill(0, count($ids), '?'));
+        $authorMarks = implode(',', array_fill(0, count($authors), '?'));
+        return db_all(
+            'SELECT ' . self::COLUMNS . " FROM books
+             WHERE id NOT IN ($idMarks) AND stock > 0
+             ORDER BY CASE WHEN author IN ($authorMarks) THEN 0 ELSE 1 END, featured DESC, created_at DESC, id DESC
+             LIMIT ?",
+            array_merge($ids, $authors, [$limit])
+        );
     }
 
     public static function count(string $q = ''): int

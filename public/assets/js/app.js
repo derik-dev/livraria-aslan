@@ -32,6 +32,129 @@
         }
     });
 
+    // Busca com sugestões enquanto digita. Enter continua indo para o catálogo.
+    var forms = document.querySelectorAll('form[data-suggest-url]');
+    for (var f = 0; f < forms.length; f++) {
+        setupSuggest(forms[f]);
+    }
+
+    function setupSuggest(form) {
+        var input = form.querySelector('input[name="q"]');
+        var box = form.querySelector('.suggest');
+        var status = form.querySelector('[data-suggest-status]');
+        var endpoint = form.getAttribute('data-suggest-url');
+        if (!input || !box || !endpoint || !window.fetch) return;
+
+        var timer = null;
+        var lastQuery = '';
+        var controller = null;
+
+        function close() {
+            box.hidden = true;
+            box.innerHTML = '';
+            input.setAttribute('aria-expanded', 'false');
+        }
+
+        function el(tag, className, text) {
+            var node = document.createElement(tag);
+            if (className) node.className = className;
+            if (text !== undefined) node.textContent = text;
+            return node;
+        }
+
+        function render(data) {
+            box.innerHTML = '';
+            if (!data.items.length) {
+                box.appendChild(el('p', 'suggest-empty', 'Nenhum livro encontrado. Aperte Enter para ver sugestões.'));
+                if (status) status.textContent = 'Nenhum livro encontrado.';
+            } else {
+                var list = el('ul', 'suggest-list');
+                data.items.forEach(function (item) {
+                    var li = el('li');
+                    var a = el('a', 'suggest-item');
+                    a.href = item.url;
+                    var img = el('img');
+                    img.src = item.image;
+                    img.alt = '';
+                    img.width = 48;
+                    img.height = 72;
+                    var info = el('span', 'suggest-info');
+                    info.appendChild(el('strong', '', item.title));
+                    info.appendChild(el('span', '', item.author));
+                    info.appendChild(el('span', 'suggest-price', item.soldOut ? item.price + ' · Esgotado' : item.price));
+                    a.appendChild(img);
+                    a.appendChild(info);
+                    li.appendChild(a);
+                    list.appendChild(li);
+                });
+                box.appendChild(list);
+                if (status) status.textContent = data.items.length + ' sugestões. Use as setas para escolher.';
+            }
+            var all = el('a', 'suggest-all', 'Ver todos os resultados para "' + data.q + '"');
+            all.href = data.allUrl;
+            box.appendChild(all);
+            box.hidden = false;
+            input.setAttribute('aria-expanded', 'true');
+        }
+
+        function search(q) {
+            if (controller && controller.abort) controller.abort();
+            controller = window.AbortController ? new AbortController() : null;
+            var url = endpoint + (endpoint.indexOf('?') === -1 ? '?' : '&') + 'q=' + encodeURIComponent(q);
+            fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin', signal: controller ? controller.signal : undefined })
+                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(function (data) {
+                    if (input.value.trim() !== q) return; // resposta antiga, ignora
+                    render(data);
+                })
+                .catch(function (err) {
+                    if (err && err.name === 'AbortError') return;
+                    close(); // sem sugestões; o Enter continua funcionando
+                });
+        }
+
+        input.addEventListener('input', function () {
+            var q = input.value.trim();
+            clearTimeout(timer);
+            if (q.length < 2) {
+                lastQuery = '';
+                close();
+                return;
+            }
+            if (q === lastQuery) return;
+            timer = setTimeout(function () {
+                lastQuery = q;
+                search(q);
+            }, 250);
+        });
+
+        // Setas navegam pelas sugestões; Esc fecha.
+        form.addEventListener('keydown', function (e) {
+            if (box.hidden) return;
+            var links = box.querySelectorAll('a');
+            if (!links.length) return;
+            var index = Array.prototype.indexOf.call(links, document.activeElement);
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                links[index < links.length - 1 ? index + 1 : 0].focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (index <= 0) input.focus(); else links[index - 1].focus();
+            } else if (e.key === 'Escape') {
+                close();
+                input.focus();
+            }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!form.contains(e.target)) close();
+        });
+
+        form.addEventListener('submit', function () {
+            clearTimeout(timer);
+        });
+    }
+
     // Máscara simples de CEP: 00000-000
     var cep = document.getElementById('cep');
     if (cep) {

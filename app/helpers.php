@@ -128,6 +128,14 @@ function url(string $path = '/', array $query = []): string
     return $u;
 }
 
+/** URL de arquivo estático com versão (muda quando o arquivo muda, evitando cache velho). */
+function asset(string $path): string
+{
+    $file = APP_ROOT . '/public/' . ltrim($path, '/');
+    $version = is_file($file) ? (string) filemtime($file) : '1';
+    return url($path, ['v' => $version]);
+}
+
 function absolute_url(string $path, array $query = []): string
 {
     $app = rtrim((string) config('app_url', ''), '/');
