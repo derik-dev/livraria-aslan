@@ -9,6 +9,10 @@ if (!is_file($configFile)) {
     exit('Arquivo app/config.php não encontrado. Copie app/config.example.php para app/config.php e preencha.');
 }
 $GLOBALS['__config'] = require $configFile;
+// Ajustes da máquina de cada desenvolvedor (banco local, debug...). Não vai para o Git nem para a Hostinger.
+if (is_file(__DIR__ . '/config.local.php')) {
+    $GLOBALS['__config'] = array_replace_recursive($GLOBALS['__config'], (array) require __DIR__ . '/config.local.php');
+}
 
 require __DIR__ . '/helpers.php';
 require __DIR__ . '/db.php';

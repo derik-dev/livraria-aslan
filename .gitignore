@@ -17,3 +17,6 @@ Thumbs.db
 .tools/
 storage/proofs/*
 !storage/proofs/.htaccess
+
+# Configuração da máquina de cada dev
+app/config.local.php

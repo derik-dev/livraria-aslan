@@ -192,3 +192,11 @@ storage/logs/   logs de erro e de e-mail (bloqueado para o navegador)
 - Toda rota do admin passa por `require_admin()`
 - Recuperação de senha com token aleatório guardado só como hash, validade de 1 hora e uso único; a resposta não revela se o e-mail existe
 - Estoque baixado em transação com `SELECT ... FOR UPDATE` (dois clientes não compram a última unidade ao mesmo tempo)
+
+## Trabalhando em dupla
+
+- **Nunca edite o `app/config.php` para rodar na sua máquina.** Ele é o da Hostinger: um push com o banco local derruba a loja no ar. Copie `app/config.local.example.php` para `app/config.local.php` e ponha ali o seu banco local. Esse arquivo não vai para o Git e substitui só o que tiver nele.
+- **Push na `main` = deploy na Hostinger.** Trabalhe numa branch (`git switch -c minha-tarefa`), abra um Pull Request no GitHub e só junte na `main` o que já foi testado.
+- **Antes de começar:** `git switch main` e `git pull`. Depois volte para a sua branch e rode `git merge main`.
+- **Mudança no banco:** crie um `.sql` novo em `database/` (ex.: `melhorias_2.sql`), commite e avise o outro. Cada um roda no seu banco local, e só um roda na Hostinger.
+- **Rodar local:** PHP 8.1+ e MySQL/MariaDB (o XAMPP serve). Importe um export do banco, crie o `config.local.php` e rode `php -S localhost:8000 -t public`.
